@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ErrorCode, failure } from '@nestor/shared';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { BusinessException } from '../exceptions/business.exception';
 
 /**
