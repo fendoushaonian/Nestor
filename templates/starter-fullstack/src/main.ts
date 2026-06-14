@@ -16,6 +16,16 @@ function describeError(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
 }
 
+/** Escape user-controlled text before interpolating it into an innerHTML string. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 async function render(): Promise<void> {
   app.innerHTML = api.isAuthenticated() ? dashboardView() : loginView()
   if (api.isAuthenticated()) {
@@ -125,10 +135,13 @@ async function loadFiles(): Promise<void> {
       page.list.length === 0
         ? '<li>No files yet.</li>'
         : page.list
-            .map((f: FileObject) => `<li><a href="${api.files.rawUrl(f.id)}">${f.originalName}</a> (${f.size} B)</li>`)
+            .map(
+              (f: FileObject) =>
+                `<li><a href="${escapeHtml(api.files.rawUrl(f.id))}">${escapeHtml(f.originalName)}</a> (${f.size} B)</li>`,
+            )
             .join('')
   } catch (err) {
-    list.innerHTML = `<li class="error">${describeError(err)}</li>`
+    list.innerHTML = `<li class="error">${escapeHtml(describeError(err))}</li>`
   }
 }
 
