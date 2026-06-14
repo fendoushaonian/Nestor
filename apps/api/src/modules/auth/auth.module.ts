@@ -5,6 +5,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LoginLog } from '../system/entities/login-log.entity';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { CaptchaController } from './captcha/captcha.controller';
+import { CaptchaService } from './captcha/captcha.service';
+import { LoginAttemptService } from './login-attempt.service';
 import { Permission } from './entities/permission.entity';
 import { Role } from './entities/role.entity';
 import { User } from './entities/user.entity';
@@ -22,7 +25,7 @@ import { TokenService } from './token.service';
     PassportModule,
     JwtModule.register({}),
   ],
-  controllers: [AuthController, OAuthController],
+  controllers: [AuthController, OAuthController, CaptchaController],
   providers: [
     AuthService,
     TokenService,
@@ -30,6 +33,8 @@ import { TokenService } from './token.service';
     SeedService,
     OAuthService,
     OAuthProvidersRegistry,
+    CaptchaService,
+    LoginAttemptService,
   ],
   exports: [TokenService],
 })

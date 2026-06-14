@@ -1,11 +1,12 @@
 import { join } from 'path';
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { v4 as uuidv4 } from 'uuid';
 import { AppController } from './app.controller';
-import configuration from './config/configuration';
+import configuration, { Configuration } from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
@@ -38,6 +39,13 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
         customProps: (req) => ({ traceId: (req as { id?: string }).id }),
       },
     }),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Configuration, true>) => {
+        const t = config.get('throttle', { infer: true });
+        return { throttlers: [{ ttl: t.ttl, limit: t.limit }], skipIf: () => !t.enabled };
+      },
+    }),
     DatabaseModule,
     RedisModule,
     MongoModule.forRoot(),
@@ -49,7 +57,8 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
   ],
   controllers: [AppController],
   providers: [
-    // 全局守卫顺序: 先登录鉴权, 再角色, 再权限
+    // 全局守卫顺序: 先限流, 再登录鉴权, 再角色, 再权限
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },

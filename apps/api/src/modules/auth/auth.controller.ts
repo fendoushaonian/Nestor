@@ -1,5 +1,6 @@
-import { Body, Controller, Get, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthUser } from './auth.types';
@@ -15,6 +16,7 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('register')
   @ApiOperation({ summary: '注册 (返回 access/refresh token)' })
   register(@Body() dto: RegisterDto) {
@@ -22,10 +24,20 @@ export class AuthController {
   }
 
   @Public()
+  // 登录额外加严: 每分钟最多 10 次, 配合验证码/锁定防爆破
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @Post('login')
   @ApiOperation({ summary: '登录 (支持用户名/邮箱/手机号)' })
   login(@Body() dto: LoginDto, @Req() req: Request) {
     return this.auth.login(dto, { ip: req.ip, userAgent: req.headers['user-agent'] });
+  }
+
+  @Public()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Get('login/gate')
+  @ApiOperation({ summary: '登录前置探测: 该账号当前是否需要验证码/已锁定' })
+  loginGate(@Query('identifier') identifier: string) {
+    return this.auth.loginGate(identifier ?? '');
   }
 
   @Public()

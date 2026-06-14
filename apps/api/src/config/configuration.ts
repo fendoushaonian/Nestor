@@ -94,6 +94,32 @@ export interface WorkflowConfig {
   encryptionKey: string;
 }
 
+/** 全局接口限流 (基于 @nestjs/throttler)。 */
+export interface ThrottleConfig {
+  enabled: boolean;
+  /** 时间窗口 (毫秒) */
+  ttl: number;
+  /** 窗口内允许的最大请求数 */
+  limit: number;
+}
+
+/** 登录安全: 图形验证码 + 失败锁定。 */
+export interface SecurityConfig {
+  captcha: {
+    enabled: boolean;
+    /** 为 true 时每次登录都要验证码; 否则仅在失败达 captchaAfter 后要求 */
+    alwaysOnLogin: boolean;
+  };
+  lockout: {
+    /** 失败达到该次数后, 登录开始要求图形验证码 */
+    captchaAfter: number;
+    /** 失败达到该次数后, 在 durationSec 内锁定账号 */
+    maxFailures: number;
+    /** 锁定/失败计数窗口时长 (秒) */
+    durationSec: number;
+  };
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
@@ -102,6 +128,8 @@ export interface Configuration {
   mongo: MongoConfig;
   oauth: OAuthConfig;
   workflow: WorkflowConfig;
+  throttle: ThrottleConfig;
+  security: SecurityConfig;
 }
 
 const toBool = (v: string | undefined, fallback = false): boolean =>
@@ -212,5 +240,21 @@ export default (): Configuration => ({
       process.env.CREDENTIAL_ENCRYPTION_KEY ||
       process.env.JWT_ACCESS_SECRET ||
       'change-me-credential-key',
+  },
+  throttle: {
+    enabled: toBool(process.env.THROTTLE_ENABLED, true),
+    ttl: toInt(process.env.THROTTLE_TTL, 60_000),
+    limit: toInt(process.env.THROTTLE_LIMIT, 120),
+  },
+  security: {
+    captcha: {
+      enabled: toBool(process.env.SECURITY_CAPTCHA_ENABLED, true),
+      alwaysOnLogin: toBool(process.env.SECURITY_CAPTCHA_ALWAYS, false),
+    },
+    lockout: {
+      captchaAfter: toInt(process.env.SECURITY_LOCKOUT_CAPTCHA_AFTER, 3),
+      maxFailures: toInt(process.env.SECURITY_LOCKOUT_MAX_FAILURES, 10),
+      durationSec: toInt(process.env.SECURITY_LOCKOUT_DURATION_SEC, 900),
+    },
   },
 });
