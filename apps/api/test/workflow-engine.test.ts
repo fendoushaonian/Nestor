@@ -12,7 +12,12 @@ describe('WorkflowEngine', () => {
     const graph: WorkflowGraph = {
       nodes: [
         { id: 't', name: 'Start', type: 'manualTrigger', parameters: {} },
-        { id: 's', name: 'Set', type: 'set', parameters: { fields: { greeting: 'hi {{$json.name}}' } } },
+        {
+          id: 's',
+          name: 'Set',
+          type: 'set',
+          parameters: { fields: { greeting: 'hi {{$json.name}}' } },
+        },
       ],
       connections: [{ from: 't', to: 's' }],
     };

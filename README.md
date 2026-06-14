@@ -140,6 +140,50 @@ MONGO_URI=mongodb://localhost:27017/nestor
 
 > 登录日志由认证流程自动写入；审计日志可在任意模块注入 `AuditLogService.record(...)` 记录。
 
+## 工作流 / iPaaS 自动化编排（workflow 模块）
+
+类 n8n / Zapier 的节点式自动化引擎：把「触发节点 + 动作/逻辑节点」连成图，按拓扑顺序执行，节点间以 item 数组（`{ json }[]`）传递数据，参数支持 `{{ }}` 表达式。
+
+**引擎能力**
+
+- 拓扑排序 + 环检测；多输入/多输出端口（分支与合并）
+- 表达式求值：`{{ $json.x }}`、`{{ $node['节点名'].json }}`、`{{ $json.n > 5 }}`（受限作用域，非 `eval`）
+- 容错：节点级重试 / 超时 / `continueOnFail`（失败仍继续后续节点）
+- 每节点输入/输出快照，支持「从指定节点重跑」
+
+**内置节点（11 个）**
+
+| 分组 | 节点 |
+| --- | --- |
+| 触发 | `manualTrigger`、`webhook`、`schedule`(cron) |
+| 动作 | `httpRequest`（支持凭证鉴权）、`set`、`merge`、`noOp`、`wait`、`code`(JS) |
+| 逻辑 | `if`（true/false 双端口）、`switch`（N 规则 + 兜底） |
+
+**接口**（均需 `workflow:read` / `workflow:write`，Webhook 入口除外）
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/workflows/node-types` | 节点目录（驱动前端面板）|
+| GET/POST | `/api/workflows` | 列表（分页）/ 创建 |
+| GET/PUT/DELETE | `/api/workflows/:id` | 详情 / 更新 / 删除 |
+| POST | `/api/workflows/:id/activate` | 启用/停用（挂载/卸载触发器）|
+| POST | `/api/workflows/:id/run` | 手动运行 |
+| GET | `/api/workflows/:id/executions` | 执行历史 |
+| GET | `/api/executions/:id` | 执行详情（含每节点快照）|
+| POST | `/api/executions/:id/rerun` | 重跑（可带 `startNodeId`）|
+| GET/POST/DELETE | `/api/credentials` | 凭证管理（AES-256-GCM 加密存储，返回脱敏）|
+| ALL | `/api/webhook/:path` | 公开 Webhook 入口，按 path 触发对应工作流 |
+
+> 凭证以 AES-256-GCM 加密落库（密钥 `CREDENTIAL_ENCRYPTION_KEY`，留空回退 `JWT_ACCESS_SECRET`），运行时按 `credentialId` 注入到 HTTP 节点（header / basic / query 鉴权）。
+
+## 前端画布（apps/web）
+
+Vite + React + [react-flow](https://reactflow.dev/) 的最小可用编辑器：登录、增删节点 / 连线、节点参数表单、保存、运行并按节点查看输出与执行历史。
+
+```bash
+pnpm --filter @nestor/web dev   # http://localhost:5173 (开发代理 /api -> :3000)
+```
+
 ## 测试与质量
 
 ```bash
@@ -159,6 +203,7 @@ pnpm test        # 单元测试 (vitest)
 | P1 | TypeORM 多数据库 + 基础数据表 + 迁移 | ✅ |
 | P2 | 登录 / 注册 / JWT / RBAC 权限 | ✅ |
 | P3 | 卡密生成 / 兑换 / 权益发放 | ✅ |
-| P4 | 抽包复用 + CLI 脚手架 | 规划中 |
+| P4 | 系统管理（审计/登录日志/配置）+ 单测 + CI | ✅ |
+| P5 | 工作流 / iPaaS 引擎（节点/触发器/凭证/执行历史）+ 前端画布 | ✅ |
 
 详见 [docs/architecture.md](docs/architecture.md)。
