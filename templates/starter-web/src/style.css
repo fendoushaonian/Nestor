@@ -1,0 +1,30 @@
+:root {
+  --nestor-primary: #4f46e5;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
+
+.app {
+  text-align: center;
+  padding: 2rem;
+}
+
+.app h1 {
+  color: var(--nestor-primary);
+}
+
+code {
+  background: rgba(127, 127, 127, 0.15);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
