@@ -139,94 +139,99 @@ export async function generateCommand(
     throw new Error(message)
   }
 
-  const config = await loadConfig(cwd, log)
-  const generator = new Generator(cwd, config, log)
-  builtinBlueprints(config.framework).forEach((b) => generator.register(b))
-
-  if (!blueprint) {
-    if (options.json) {
-      process.stdout.write(
-        `${JSON.stringify({ ok: true, blueprints: generator.list().map((b) => ({ name: b.name, description: b.description })) })}\n`,
-      )
-      return undefined
-    }
-    logger.info('Available blueprints:')
-    for (const b of generator.list()) {
-      logger.info(`  ${pc.cyan(b.name.padEnd(12))} ${b.description}`)
-    }
-    return undefined
-  }
-
-  if (!name) {
-    return emitError(`Usage: nestor generate ${blueprint} <name>`)
-  }
-
-  let written: string[]
   try {
-    written = await generator.generate(blueprint, name, { overwrite: options.overwrite })
+    return await run()
   } catch (err) {
+    // Honour the --json contract for *any* failure (e.g. a malformed nestor.config),
+    // not just the explicit emitError paths below.
     return emitError(err instanceof Error ? err.message : String(err))
   }
 
-  const isNestModule =
-    blueprint === 'nest-module' || (blueprint === 'module' && config.framework === 'node')
+  async function run(): Promise<GenerateResult | undefined> {
+    const config = await loadConfig(cwd, log)
+    const generator = new Generator(cwd, config, log)
+    builtinBlueprints(config.framework).forEach((b) => generator.register(b))
 
-  const Pascal = toPascalCase(name)
-  const kebab = toKebabCase(name)
-  const registered: RegistrationAction[] = []
-  const nextSteps: NextStep[] = []
-
-  if (isNestModule) {
-    if (options.register) {
-      registered.push(...(await registerNestModule(cwd, name)))
-    } else {
-      nextSteps.push(
-        {
-          type: 'register-module',
-          description: `Add ${Pascal}Module to the imports array in src/app.module.ts`,
-          module: `${Pascal}Module`,
-          file: 'src/app.module.ts',
-        },
-        {
-          type: 'register-entity',
-          description: `Add ${Pascal} entity to the entities array in src/database/entities.ts`,
-          entity: Pascal,
-          file: 'src/database/entities.ts',
-        },
-      )
+    if (!blueprint) {
+      if (options.json) {
+        process.stdout.write(
+          `${JSON.stringify({ ok: true, blueprints: generator.list().map((b) => ({ name: b.name, description: b.description })) })}\n`,
+        )
+        return undefined
+      }
+      logger.info('Available blueprints:')
+      for (const b of generator.list()) {
+        logger.info(`  ${pc.cyan(b.name.padEnd(12))} ${b.description}`)
+      }
+      return undefined
     }
-    nextSteps.push({
-      type: 'seed-permissions',
-      description: `Seed ${kebab}:read / ${kebab}:write permissions if you use the permission guards`,
-      permissions: [`${kebab}:read`, `${kebab}:write`],
-    })
-  }
 
-  const result: GenerateResult = { ok: true, blueprint, name, written, registered, nextSteps }
+    if (!name) {
+      return emitError(`Usage: nestor generate ${blueprint} <name>`)
+    }
 
-  if (options.json) {
-    process.stdout.write(`${JSON.stringify(result)}\n`)
+    const written = await generator.generate(blueprint, name, { overwrite: options.overwrite })
+
+    const isNestModule =
+      blueprint === 'nest-module' || (blueprint === 'module' && config.framework === 'node')
+
+    const Pascal = toPascalCase(name)
+    const kebab = toKebabCase(name)
+    const registered: RegistrationAction[] = []
+    const nextSteps: NextStep[] = []
+
+    if (isNestModule) {
+      if (options.register) {
+        registered.push(...(await registerNestModule(cwd, name)))
+      } else {
+        nextSteps.push(
+          {
+            type: 'register-module',
+            description: `Add ${Pascal}Module to the imports array in src/app.module.ts`,
+            module: `${Pascal}Module`,
+            file: 'src/app.module.ts',
+          },
+          {
+            type: 'register-entity',
+            description: `Add ${Pascal} entity to the entities array in src/database/entities.ts`,
+            entity: Pascal,
+            file: 'src/database/entities.ts',
+          },
+        )
+      }
+      nextSteps.push({
+        type: 'seed-permissions',
+        description: `Seed ${kebab}:read / ${kebab}:write permissions if you use the permission guards`,
+        permissions: [`${kebab}:read`, `${kebab}:write`],
+      })
+    }
+
+    const result: GenerateResult = { ok: true, blueprint, name, written, registered, nextSteps }
+
+    if (options.json) {
+      process.stdout.write(`${JSON.stringify(result)}\n`)
+      return result
+    }
+
+    logger.success(`Generated ${written.length} file(s):`)
+    written.forEach((f) => logger.info(`  ${f}`))
+
+    for (const action of registered) {
+      const label =
+        action.status === 'done'
+          ? pc.green('wired')
+          : action.status === 'already'
+            ? pc.dim('already wired')
+            : pc.yellow('skipped')
+      logger.info(`  ${label} ${action.file}${action.detail ? ` (${action.detail})` : ''}`)
+    }
+
+    if (nextSteps.length > 0) {
+      logger.info('')
+      logger.info(pc.yellow('Next steps:'))
+      nextSteps.forEach((step, i) => logger.info(`  ${i + 1}. ${step.description}`))
+    }
+
     return result
   }
-
-  logger.success(`Generated ${written.length} file(s):`)
-  written.forEach((f) => logger.info(`  ${f}`))
-
-  for (const action of registered) {
-    const label =
-      action.status === 'done'
-        ? pc.green('wired')
-        : action.status === 'already'
-          ? pc.dim('already wired')
-          : pc.yellow('skipped')
-    logger.info(`  ${label} ${action.file}${action.detail ? ` (${action.detail})` : ''}`)
-  }
-
-  if (nextSteps.length > 0) {
-    logger.info('')
-    logger.info(pc.yellow('Next steps:'))
-    nextSteps.forEach((step, i) => logger.info(`  ${i + 1}. ${step.description}`))
-  }
-
-  return result
 }

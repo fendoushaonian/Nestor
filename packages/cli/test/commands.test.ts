@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { silentLogger } from '@nestor/core'
 import { buildProgram } from '../src/cli.js'
 import { generateCommand } from '../src/commands/generate.js'
@@ -142,6 +142,27 @@ describe('generate — agent-friendly output', () => {
     const entities = await fs.readFile(path.join(cwd, 'src', 'database', 'entities.ts'), 'utf8')
     expect(entities).toContain("import { Order } from '../modules/order/entities/order.entity';")
     expect(entities).toMatch(/export const entities = \[\s*\n\s*Order,/)
+  })
+
+  it('--json emits a structured error (not a thrown exception) when the config is malformed', async () => {
+    await fs.writeFile(path.join(cwd, 'nestor.config.mjs'), 'export default { not valid js\n', 'utf8')
+    const writes: string[] = []
+    const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
+      writes.push(String(chunk))
+      return true
+    })
+    const prevExit = process.exitCode
+    try {
+      const result = await generateCommand('nest-module', 'foo', { json: true }, silentLogger)
+      expect(result).toBeUndefined()
+      const payload = JSON.parse(writes.join(''))
+      expect(payload.ok).toBe(false)
+      expect(typeof payload.error).toBe('string')
+      expect(process.exitCode).toBe(1)
+    } finally {
+      spy.mockRestore()
+      process.exitCode = prevExit
+    }
   })
 
   it('--register is idempotent', async () => {
