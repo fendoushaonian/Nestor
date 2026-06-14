@@ -20,6 +20,11 @@ describe('expression', () => {
     expect(resolveValue('{{$node["Prev"].json.ok}}', scope())).toBe(true);
   });
 
+  it('多段表达式逐段插值, 不被贪婪匹配吞掉中间分隔', () => {
+    expect(resolveValue('{{$json.name}} - {{$json.age}}', scope())).toBe('bob - 7');
+    expect(resolveValue('{{$json.name}}{{$json.name}}', scope())).toBe('bobbob');
+  });
+
   it('无表达式原样返回', () => {
     expect(resolveValue('plain', scope())).toBe('plain');
     expect(resolveValue(42, scope())).toBe(42);

@@ -76,7 +76,7 @@ export class WorkflowController {
   @ApiOperation({ summary: '删除工作流' })
   async remove(@Param('id') id: string) {
     await this.workflows.remove(id);
-    await this.schedule.resync(id);
+    this.schedule.unregister(id);
     return { removed: true };
   }
 

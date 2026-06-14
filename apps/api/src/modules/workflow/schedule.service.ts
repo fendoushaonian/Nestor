@@ -32,11 +32,16 @@ export class WorkflowScheduleService implements OnModuleInit {
 
   /** 单个工作流变更后的增量同步 */
   async resync(workflowId: string): Promise<void> {
+    this.unregister(workflowId);
+    const wf = await this.workflows.get(workflowId);
+    if (wf.active) this.registerWorkflow(wf);
+  }
+
+  /** 仅移除某工作流的定时任务(用于删除场景, 不再回查工作流, 避免抛 NOT_FOUND)。 */
+  unregister(workflowId: string): void {
     for (const name of this.listJobNames()) {
       if (name.startsWith(`${JOB_PREFIX}${workflowId}:`)) this.removeJob(name);
     }
-    const wf = await this.workflows.get(workflowId);
-    if (wf.active) this.registerWorkflow(wf);
   }
 
   private registerWorkflow(wf: Workflow): void {

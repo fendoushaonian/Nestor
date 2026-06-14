@@ -176,3 +176,18 @@ configs         系统配置  (id, key, value, group)
 4. **从哪开始**：要我直接动手搭 **P0+P1 地基**（monorepo + NestJS + 数据库 + 基础表），还是先把方案细化？
 
 确认后我就开始按阶段搭建并提 PR。
+
+---
+
+## 9. 安全边界(工作流表达式 / Code 节点)
+
+工作流引擎的表达式(`{{ ... }}`)与 Code 节点通过 `new Function(...)` 执行,
+这是引擎的**预期能力**(类似 n8n/Zapier),但等同于在 Node 进程内运行 JavaScript:
+即便表达式作用域只暴露 `$json/$items/$node/$now`,`new Function` 仍可访问
+`process`、`globalThis`、(CJS 下的)`require` 等全局对象。
+
+因此请把「能创建/编辑工作流」视为**受信任操作**:
+
+- 相关写接口已用 `@Permissions('workflow:write')` 守卫,仅授权用户可改工作流;
+- **不要**把工作流编辑能力开放给不受信任的终端用户;
+- 若未来需要面向不受信任用户,应改用沙箱(如 `isolated-vm` / `vm2` 替代方案 / 子进程 + 资源限制),并对可用全局做白名单。

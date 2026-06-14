@@ -3,6 +3,7 @@ import { ErrorCode } from '@nestor/shared';
 import { DataSource, EntityManager } from 'typeorm';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { CacheService } from '../redis/cache.service';
+import { redeemLockId } from './card-code.util';
 import { CardBatch } from './entities/card-batch.entity';
 import { CardRedeemLog } from './entities/card-redeem-log.entity';
 import { Card, CardStatus } from './entities/card.entity';
@@ -43,7 +44,8 @@ export class RedeemService {
     ctx: RedeemContext,
   ): Promise<RedeemResult> {
     const lockKey = `card:redeem:lock:${code}`;
-    const locked = await this.acquireLock(lockKey);
+    const lockToken = redeemLockId();
+    const locked = await this.acquireLock(lockKey, lockToken);
     if (!locked) {
       throw new BusinessException(ErrorCode.CARD_REDEEM_CONFLICT, '卡密正在被处理, 请稍后重试');
     }
@@ -52,7 +54,7 @@ export class RedeemService {
         this.doRedeem(manager, code, secret, userId, ctx),
       );
     } finally {
-      await this.releaseLock(lockKey);
+      await this.releaseLock(lockKey, lockToken);
     }
   }
 
@@ -166,14 +168,21 @@ export class RedeemService {
     return manager.save(entitlement);
   }
 
-  private async acquireLock(key: string): Promise<boolean> {
+  private async acquireLock(key: string, token: string): Promise<boolean> {
     const client = this.cache.raw;
     if (!client) return true; // 未启用 Redis 时跳过, 依赖 DB 原子更新兜底
-    const res = await client.set(key, '1', 'EX', REDIS_LOCK_TTL, 'NX');
+    // 存入唯一 token, 释放时校验, 避免误删他人持有的锁。
+    const res = await client.set(key, token, 'EX', REDIS_LOCK_TTL, 'NX');
     return res === 'OK';
   }
 
-  private async releaseLock(key: string): Promise<void> {
-    await this.cache.del(key);
+  // 仅当锁仍为本次持有(token 匹配)时才删除, 原子执行避免竞态(锁超时后被他人重新获取的场景)。
+  private static readonly RELEASE_LUA =
+    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
+
+  private async releaseLock(key: string, token: string): Promise<void> {
+    const client = this.cache.raw;
+    if (!client) return;
+    await client.eval(RedeemService.RELEASE_LUA, 1, key, token);
   }
 }

@@ -33,7 +33,9 @@ export function resolveValue(value: unknown, scope: ExpressionScope): unknown {
 
   const trimmed = value.trim();
   const single = trimmed.match(/^\{\{([\s\S]+)\}\}$/);
-  if (single) {
+  // 仅当整串是「单一表达式」时才直接求值并保留原始类型;
+  // 含多段表达式(如 `{{a}} - {{b}}`)的串走下面的逐段替换, 避免贪婪匹配吞掉中间的 `}} {{`。
+  if (single && !single[1].includes('{{')) {
     return evalExpression(single[1], scope);
   }
   if (!value.includes('{{')) return value;
