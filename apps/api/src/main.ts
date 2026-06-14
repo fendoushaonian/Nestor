@@ -1,6 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
@@ -18,7 +18,11 @@ async function bootstrap() {
   const appCfg = config.get('app', { infer: true });
 
   app.setGlobalPrefix(appCfg.prefix);
-  app.enableCors();
+  // 配置了 CORS_ORIGINS 时只放行白名单, 否则放行所有来源 (仅适合开发期)
+  app.enableCors({
+    origin: appCfg.corsOrigins.length > 0 ? appCfg.corsOrigins : true,
+    credentials: true,
+  });
 
   // 全局参数校验: DTO 上的 class-validator 规则自动生效
   app.useGlobalPipes(
@@ -31,7 +35,7 @@ async function bootstrap() {
   );
 
   // 全局统一响应 + 异常兜底
-  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalInterceptors(new TransformInterceptor(app.get(Reflector)));
   app.useGlobalFilters(new AllExceptionsFilter());
 
   if (appCfg.swaggerEnabled) {

@@ -13,8 +13,9 @@ import { buildTypeOrmOptions, RUNTIME_MIGRATIONS_GLOB } from './typeorm-options'
         const db = config.get('database', { infer: true });
         return {
           ...buildTypeOrmOptions(db, RUNTIME_MIGRATIONS_GLOB),
-          // 应用启动时自动执行已生成的 migration
-          migrationsRun: true,
+          // 是否在启动时自动执行 migration (内置迁移仅针对 sqlite,
+          // 切换到 mysql/postgres 时应重新生成迁移并按需开关此项)
+          migrationsRun: db.migrationsRun,
           autoLoadEntities: true,
         };
       },

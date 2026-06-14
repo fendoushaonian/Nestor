@@ -5,6 +5,8 @@ export interface AppConfig {
   port: number;
   prefix: string;
   swaggerEnabled: boolean;
+  // 允许的跨域来源, 空数组表示不限制 (仅开发期)
+  corsOrigins: string[];
 }
 
 export interface DatabaseConfig {
@@ -17,6 +19,8 @@ export interface DatabaseConfig {
   database: string;
   logging: boolean;
   synchronize: boolean;
+  // 启动时是否自动执行 migration
+  migrationsRun: boolean;
 }
 
 export interface JwtConfig {
@@ -36,8 +40,25 @@ const toBool = (v: string | undefined, fallback = false): boolean =>
   v === undefined ? fallback : ['1', 'true', 'yes', 'on'].includes(v.toLowerCase());
 
 const toInt = (v: string | undefined, fallback: number): number => {
+  if (v === undefined || v.trim() === '') return fallback;
   const n = Number(v);
   return Number.isFinite(n) ? n : fallback;
+};
+
+const toList = (v: string | undefined): string[] =>
+  (v ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+const DB_TYPES: readonly DatabaseType[] = ['sqlite', 'mysql', 'postgres'];
+
+const toDbType = (v: string | undefined): DatabaseType => {
+  const value = (v ?? 'sqlite').trim();
+  if (!DB_TYPES.includes(value as DatabaseType)) {
+    throw new Error(`Unsupported DB_TYPE: "${v}". Must be one of: ${DB_TYPES.join(', ')}.`);
+  }
+  return value as DatabaseType;
 };
 
 export default (): Configuration => ({
@@ -46,9 +67,10 @@ export default (): Configuration => ({
     port: toInt(process.env.APP_PORT, 3000),
     prefix: process.env.APP_PREFIX ?? 'api',
     swaggerEnabled: toBool(process.env.SWAGGER_ENABLED, true),
+    corsOrigins: toList(process.env.CORS_ORIGINS),
   },
   database: {
-    type: (process.env.DB_TYPE as DatabaseType) ?? 'sqlite',
+    type: toDbType(process.env.DB_TYPE),
     sqlitePath: process.env.DB_SQLITE_PATH ?? './data/nestor.sqlite',
     host: process.env.DB_HOST ?? 'localhost',
     port: toInt(process.env.DB_PORT, 5432),
@@ -57,6 +79,7 @@ export default (): Configuration => ({
     database: process.env.DB_DATABASE ?? 'nestor',
     logging: toBool(process.env.DB_LOGGING, false),
     synchronize: toBool(process.env.DB_SYNCHRONIZE, false),
+    migrationsRun: toBool(process.env.DB_MIGRATIONS_RUN, true),
   },
   jwt: {
     accessSecret: process.env.JWT_ACCESS_SECRET ?? 'change-me-access-secret',

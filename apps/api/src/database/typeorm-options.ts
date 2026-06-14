@@ -37,12 +37,15 @@ export function buildTypeOrmOptions(db: DatabaseConfig, migrationsGlob: string):
         ...common,
       };
     case 'sqlite':
-    default:
       return {
         type: 'sqlite',
         database: db.sqlitePath,
         ...common,
       };
+    default:
+      throw new Error(
+        `Unsupported DB_TYPE: "${db.type}". Must be one of: sqlite, mysql, postgres.`,
+      );
   }
 }
 
