@@ -9,7 +9,7 @@
 ## 技术栈
 
 - **NestJS 10** — 模块化、依赖注入、Guard/Pipe/Interceptor
-- **TypeORM** — 多数据库（SQLite / MySQL / PostgreSQL）一键切换
+- **TypeORM** — 多数据库一键切换（SQLite / better-sqlite3 / MySQL / MariaDB / PostgreSQL / CockroachDB / SQL Server / Oracle）
 - **pnpm monorepo** — `apps/` 应用 + `packages/` 可复用包
 - **class-validator** 参数校验、**Swagger** 自动 API 文档、**pino** 结构化日志
 
@@ -54,22 +54,40 @@ pnpm dev
 
 ## 多数据库切换
 
-只改 `.env` 不改代码：
+只改 `.env` 不改代码，重启即生效：
 
 ```bash
 DB_TYPE=sqlite      # 开发默认, 零依赖
 # DB_TYPE=postgres  # 生产推荐
-# DB_TYPE=mysql
+# DB_TYPE=mysql / mariadb / cockroachdb / mssql / oracle / better-sqlite3
 ```
 
-切到 MySQL/PostgreSQL 后，按该数据库生成并执行迁移：
+支持的库与对应驱动（按需安装，不强塞进项目）：
+
+| DB_TYPE | 数据库 | 需安装的驱动 |
+| --- | --- | --- |
+| `sqlite` | SQLite | 已内置 |
+| `better-sqlite3` | SQLite (更快) | `better-sqlite3` |
+| `mysql` | MySQL | `mysql2` |
+| `mariadb` | MariaDB | `mysql2` |
+| `postgres` | PostgreSQL | `pg` |
+| `cockroachdb` | CockroachDB | `pg` |
+| `mssql` | SQL Server | `mssql` |
+| `oracle` | Oracle | `oracledb` |
+
+安装示例：`pnpm --filter @nestor/api add mysql2`（其它库同理）。
+
+非法的 `DB_TYPE` 会在启动时直接报错，不会静默回退。
+
+切到非 SQLite 数据库后，按该库生成并执行迁移：
 
 ```bash
 pnpm migration:generate src/database/migrations/Init
 pnpm migration:run
 ```
 
-> 仓库内置的初始迁移针对 SQLite（开发默认）。切换到其它数据库时请重新生成对应迁移。
+> 仓库内置的初始迁移针对 SQLite（开发默认）。切换到其它数据库时请重新生成对应迁移；
+> 如需先关闭启动自动迁移，设 `DB_MIGRATIONS_RUN=false`。
 
 ## 路线图
 

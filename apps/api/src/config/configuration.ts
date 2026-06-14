@@ -1,4 +1,12 @@
-export type DatabaseType = 'sqlite' | 'mysql' | 'postgres';
+export type DatabaseType =
+  | 'sqlite'
+  | 'better-sqlite3'
+  | 'mysql'
+  | 'mariadb'
+  | 'postgres'
+  | 'cockroachdb'
+  | 'mssql'
+  | 'oracle';
 
 export interface AppConfig {
   env: string;
@@ -17,6 +25,10 @@ export interface DatabaseConfig {
   username: string;
   password: string;
   database: string;
+  // schema 名 (postgres/cockroachdb/mssql 可用), 留空用驱动默认
+  schema?: string;
+  // mssql 是否启用 TLS 加密 (Azure SQL 通常需要)
+  mssqlEncrypt: boolean;
   logging: boolean;
   synchronize: boolean;
   // 启动时是否自动执行 migration
@@ -51,7 +63,16 @@ const toList = (v: string | undefined): string[] =>
     .map((s) => s.trim())
     .filter((s) => s.length > 0);
 
-const DB_TYPES: readonly DatabaseType[] = ['sqlite', 'mysql', 'postgres'];
+const DB_TYPES: readonly DatabaseType[] = [
+  'sqlite',
+  'better-sqlite3',
+  'mysql',
+  'mariadb',
+  'postgres',
+  'cockroachdb',
+  'mssql',
+  'oracle',
+];
 
 const toDbType = (v: string | undefined): DatabaseType => {
   const value = (v ?? 'sqlite').trim();
@@ -77,6 +98,8 @@ export default (): Configuration => ({
     username: process.env.DB_USERNAME ?? 'postgres',
     password: process.env.DB_PASSWORD ?? 'postgres',
     database: process.env.DB_DATABASE ?? 'nestor',
+    schema: process.env.DB_SCHEMA,
+    mssqlEncrypt: toBool(process.env.DB_MSSQL_ENCRYPT, true),
     logging: toBool(process.env.DB_LOGGING, false),
     synchronize: toBool(process.env.DB_SYNCHRONIZE, false),
     migrationsRun: toBool(process.env.DB_MIGRATIONS_RUN, true),
