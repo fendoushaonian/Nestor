@@ -174,7 +174,9 @@ export class NestorClient {
       if (auth && res.status === 401 && !options._retried && (await this.tryRefresh())) {
         return this.request<T>(path, { ...options, _retried: true })
       }
-      throw new NestorApiError(res.status, res.statusText || 'Request failed', { status: res.status })
+      throw new NestorApiError(res.status, res.statusText || 'Request failed', {
+        status: res.status,
+      })
     }
 
     if (envelope.code !== 0) {
@@ -241,7 +243,9 @@ export class NestorClient {
       form.append('file', file, filename)
       return this.request<FileObject>('/upload', { method: 'POST', form })
     },
-    list: (query: { page?: number; pageSize?: number } = {}): Promise<PaginatedResult<FileObject>> =>
+    list: (
+      query: { page?: number; pageSize?: number } = {},
+    ): Promise<PaginatedResult<FileObject>> =>
       this.request<PaginatedResult<FileObject>>('/files', {
         query: { page: query.page, pageSize: query.pageSize },
       }),

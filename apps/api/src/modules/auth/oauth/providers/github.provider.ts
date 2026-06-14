@@ -66,7 +66,8 @@ export class GithubProvider implements OAuthProvider {
       const emails = await fetchJson<GithubEmail[]>('https://api.github.com/user/emails', {
         headers,
       }).catch(() => [] as GithubEmail[]);
-      email = emails.find((e) => e.primary && e.verified)?.email ?? emails.find((e) => e.verified)?.email;
+      email =
+        emails.find((e) => e.primary && e.verified)?.email ?? emails.find((e) => e.verified)?.email;
     }
 
     return {

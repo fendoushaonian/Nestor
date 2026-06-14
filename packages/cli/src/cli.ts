@@ -25,7 +25,10 @@ export function buildProgram(logger: Logger = createLogger()): Command {
   program
     .command('generate')
     .alias('g')
-    .argument('[blueprint]', 'blueprint name (component, page, screen, module, nest-module, web-module)')
+    .argument(
+      '[blueprint]',
+      'blueprint name (component, page, screen, module, nest-module, web-module)',
+    )
     .argument('[name]', 'entity name')
     .option('--overwrite', 'overwrite existing files', false)
     .option('--json', 'emit a machine-readable JSON result (for tools / AI agents)', false)

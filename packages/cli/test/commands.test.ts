@@ -91,7 +91,11 @@ describe('generate — agent-friendly output', () => {
     cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'nestor-agent-'))
     prev = process.cwd()
     process.chdir(cwd)
-    await fs.writeFile(path.join(cwd, 'nestor.config.mjs'), "export default { framework: 'node' }\n", 'utf8')
+    await fs.writeFile(
+      path.join(cwd, 'nestor.config.mjs'),
+      "export default { framework: 'node' }\n",
+      'utf8',
+    )
   })
 
   afterEach(async () => {
@@ -145,7 +149,11 @@ describe('generate — agent-friendly output', () => {
   })
 
   it('--json emits a structured error (not a thrown exception) when the config is malformed', async () => {
-    await fs.writeFile(path.join(cwd, 'nestor.config.mjs'), 'export default { not valid js\n', 'utf8')
+    await fs.writeFile(
+      path.join(cwd, 'nestor.config.mjs'),
+      'export default { not valid js\n',
+      'utf8',
+    )
     const writes: string[] = []
     const spy = vi.spyOn(process.stdout, 'write').mockImplementation((chunk: unknown) => {
       writes.push(String(chunk))
@@ -179,7 +187,12 @@ describe('generate — agent-friendly output', () => {
     )
 
     await generateCommand('nest-module', 'order', { register: true }, silentLogger)
-    const second = await generateCommand('nest-module', 'order', { register: true, overwrite: true }, silentLogger)
+    const second = await generateCommand(
+      'nest-module',
+      'order',
+      { register: true, overwrite: true },
+      silentLogger,
+    )
 
     expect(second?.registered).toEqual([
       { file: 'src/app.module.ts', status: 'already' },

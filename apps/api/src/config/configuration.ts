@@ -220,7 +220,9 @@ const STORAGE_DRIVERS: readonly StorageDriver[] = ['local', 's3', 'oss'];
 const toStorageDriver = (v: string | undefined): StorageDriver => {
   const value = (v ?? 'local').trim();
   if (!STORAGE_DRIVERS.includes(value as StorageDriver)) {
-    throw new Error(`Unsupported STORAGE_DRIVER: "${v}". Must be one of: ${STORAGE_DRIVERS.join(', ')}.`);
+    throw new Error(
+      `Unsupported STORAGE_DRIVER: "${v}". Must be one of: ${STORAGE_DRIVERS.join(', ')}.`,
+    );
   }
   return value as StorageDriver;
 };
@@ -377,7 +379,8 @@ export default (): Configuration => ({
       accessKeyId: process.env.STORAGE_OSS_ACCESS_KEY_ID ?? '',
       accessKeySecret: process.env.STORAGE_OSS_ACCESS_KEY_SECRET ?? '',
       endpoint: process.env.STORAGE_OSS_ENDPOINT || undefined,
-      publicBaseUrl: (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
+      publicBaseUrl:
+        (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
     },
   },
   notification: {

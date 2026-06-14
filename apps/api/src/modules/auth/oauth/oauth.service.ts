@@ -153,7 +153,10 @@ export class OAuthService {
         .slice(0, 24) || `${provider}_${profile.providerUserId.slice(0, 12)}`;
     let candidate = base;
     for (let i = 0; i < 5; i++) {
-      const taken = await manager.findOne(User, { where: { username: candidate }, withDeleted: true });
+      const taken = await manager.findOne(User, {
+        where: { username: candidate },
+        withDeleted: true,
+      });
       if (!taken) return candidate;
       candidate = `${base}_${randomUUID().slice(0, 6)}`;
     }

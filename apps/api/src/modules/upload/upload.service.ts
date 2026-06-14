@@ -108,7 +108,10 @@ export class UploadService {
 
   /** 生成 yyyy/mm/uuid.ext 形式的存储键, 保留原扩展名。 */
   private buildKey(originalName: string): string {
-    const ext = path.extname(originalName).toLowerCase().replace(/[^.a-z0-9]/g, '');
+    const ext = path
+      .extname(originalName)
+      .toLowerCase()
+      .replace(/[^.a-z0-9]/g, '');
     const now = new Date();
     const yyyy = now.getUTCFullYear();
     const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
