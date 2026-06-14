@@ -50,4 +50,35 @@ describe('command integration', () => {
     const pkg = JSON.parse(await fs.readFile(path.join(cwd, 'package.json'), 'utf8'))
     expect(pkg.dependencies.jsonwebtoken).toBe('^9.0.0')
   })
+
+  it('generate screen creates a React Native screen', async () => {
+    await generateCommand('screen', 'settings panel', {}, silentLogger)
+    const file = path.join(cwd, 'src', 'screens', 'SettingsPanelScreen.tsx')
+    const contents = await fs.readFile(file, 'utf8')
+    expect(contents).toContain('export function SettingsPanelScreen')
+    expect(contents).toContain("from 'react-native'")
+  })
+
+  it('add nav queues React Navigation deps + a navigator file', async () => {
+    await fs.writeFile(
+      path.join(cwd, 'package.json'),
+      JSON.stringify({ name: 'demo', dependencies: {} }, null, 2),
+      'utf8',
+    )
+    await addCommand(['nav'], {}, silentLogger)
+
+    const navFile = await fs.readFile(path.join(cwd, 'src', 'navigation', 'index.tsx'), 'utf8')
+    expect(navFile).toContain('AppNavigator')
+
+    const pkg = JSON.parse(await fs.readFile(path.join(cwd, 'package.json'), 'utf8'))
+    expect(pkg.dependencies['@react-navigation/native']).toBe('^6.1.0')
+  })
+})
+
+describe('templates', () => {
+  it('exposes the mobile template', async () => {
+    const { listTemplates } = await import('../src/paths.js')
+    const names = await listTemplates()
+    expect(names).toEqual(expect.arrayContaining(['mobile', 'web']))
+  })
 })

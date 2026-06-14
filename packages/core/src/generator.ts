@@ -120,6 +120,17 @@ export function builtinBlueprints(): Blueprint[] {
       ],
     },
     {
+      name: 'screen',
+      description: 'A React Native screen (Expo)',
+      targetDir: 'src/screens',
+      files: (_name, v) => [
+        {
+          path: `${v.pascalName}Screen.tsx`,
+          contents: `import { StyleSheet, Text, View } from 'react-native'\n\nexport function ${v.pascalName}Screen() {\n  return (\n    <View style={styles.container}>\n      <Text style={styles.title}>${v.pascalName}</Text>\n    </View>\n  )\n}\n\nconst styles = StyleSheet.create({\n  container: { flex: 1, alignItems: 'center', justifyContent: 'center' },\n  title: { fontSize: 22, fontWeight: '700' },\n})\n`,
+        },
+      ],
+    },
+    {
       name: 'module',
       description: 'A feature module (state + service + barrel)',
       targetDir: 'src/modules',

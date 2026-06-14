@@ -46,6 +46,20 @@ export const builtinPlugins: Record<string, NestorPlugin> = {
     },
   }),
 
+  nav: definePlugin({
+    name: 'nav',
+    description: 'Tab/stack navigation scaffolding (React Navigation)',
+    apply(ctx) {
+      ctx.addDependency('@react-navigation/native', '^6.1.0')
+      ctx.addDependency('@react-navigation/bottom-tabs', '^6.5.0')
+      ctx.addFile(
+        'src/navigation/index.tsx',
+        "import { NavigationContainer } from '@react-navigation/native'\nimport { createBottomTabNavigator } from '@react-navigation/bottom-tabs'\n\nconst Tab = createBottomTabNavigator()\n\nexport function AppNavigator() {\n  return (\n    <NavigationContainer>\n      <Tab.Navigator>{/* register screens here */}</Tab.Navigator>\n    </NavigationContainer>\n  )\n}\n",
+      )
+      ctx.logger.success('Added navigation scaffolding under src/navigation.')
+    },
+  }),
+
   auth: definePlugin({
     name: 'auth',
     description: 'Token-based auth scaffolding',
