@@ -15,6 +15,7 @@ import { CardModule } from './modules/card/card.module';
 import { HealthModule } from './modules/health/health.module';
 import { MongoModule } from './modules/mongo/mongo.module';
 import { RedisModule } from './modules/redis/redis.module';
+import { SystemModule } from './modules/system/system.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { RedisModule } from './modules/redis/redis.module';
     HealthModule,
     AuthModule,
     CardModule,
+    SystemModule,
   ],
   controllers: [AppController],
   providers: [

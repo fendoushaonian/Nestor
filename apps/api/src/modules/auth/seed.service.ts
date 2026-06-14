@@ -15,6 +15,8 @@ const PERMISSIONS: Array<{ code: string; name: string; resource: string; action:
   { code: 'card:read', name: '查看卡密', resource: 'card', action: 'read' },
   { code: 'card:create', name: '生成卡密', resource: 'card', action: 'create' },
   { code: 'card:redeem', name: '兑换卡密', resource: 'card', action: 'redeem' },
+  { code: 'system:read', name: '查看系统日志/配置', resource: 'system', action: 'read' },
+  { code: 'system:write', name: '管理系统配置', resource: 'system', action: 'write' },
 ];
 
 /** 普通用户默认拥有的权限 */

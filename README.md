@@ -26,8 +26,8 @@ Nestor/
 │           ├── config/       # 配置加载 (env -> 类型化配置)
 │           ├── database/     # TypeORM 多数据库 + 迁移数据源 + 实体注册
 │           └── modules/
-│               ├── auth/     # 用户 / 角色 / 权限 实体 (P2 加业务)
-│               ├── card/     # 卡密 / 批次 / 商品 / 权益 实体 (P3 加业务)
+│               ├── auth/     # 用户 / 角色 / 权限 / JWT / RBAC
+│               ├── card/     # 卡密 / 批次 / 商品 / 权益 / 兑换
 │               ├── system/   # 审计日志 / 登录日志 / 系统配置
 │               └── health/   # 健康检查
 ├── packages/
@@ -125,14 +125,40 @@ MONGO_URI=mongodb://localhost:27017/nestor
 
 > 健康检查 `/api/health` 会按启用状态自动纳入 `redis` / `mongodb` 探测，未启用则不影响整体状态。
 
+## 系统管理（system 模块）
+
+面向后台运营的只读/管理接口，均需 `system:read` / `system:write` 权限：
+
+| 方法 | 路径 | 权限 | 说明 |
+| --- | --- | --- | --- |
+| GET | `/api/system/audit-logs` | `system:read` | 操作审计日志（分页，可按 `userId`/`action` 过滤）|
+| GET | `/api/system/login-logs` | `system:read` | 登录日志（分页，可按 `username`/`success` 过滤）|
+| GET | `/api/system/configs` | `system:read` | 系统配置列表（可按 `group` 过滤）|
+| GET | `/api/system/configs/:key` | `system:read` | 读取单个配置项 |
+| PUT | `/api/system/configs/:key` | `system:write` | 新增或更新配置项（幂等）|
+| DELETE | `/api/system/configs/:key` | `system:write` | 删除配置项 |
+
+> 登录日志由认证流程自动写入；审计日志可在任意模块注入 `AuditLogService.record(...)` 记录。
+
+## 测试与质量
+
+```bash
+pnpm build       # 构建 core + api
+pnpm typecheck   # 类型检查
+pnpm lint        # ESLint
+pnpm test        # 单元测试 (vitest)
+```
+
+仓库已配置 GitHub Actions（[.github/workflows/ci.yml](.github/workflows/ci.yml)）：每次 push 到 `main` 或开 PR 时自动跑 install / build / typecheck / lint / test。
+
 ## 路线图
 
 | 阶段 | 内容 | 状态 |
 | --- | --- | --- |
 | P0 | monorepo + NestJS 骨架 + 统一响应/异常/日志 + Swagger | ✅ |
 | P1 | TypeORM 多数据库 + 基础数据表 + 迁移 | ✅ |
-| P2 | 登录 / 注册 / JWT / RBAC 权限 | 规划中 |
-| P3 | 卡密生成 / 兑换 / 权益发放 | 规划中 |
+| P2 | 登录 / 注册 / JWT / RBAC 权限 | ✅ |
+| P3 | 卡密生成 / 兑换 / 权益发放 | ✅ |
 | P4 | 抽包复用 + CLI 脚手架 | 规划中 |
 
 详见 [docs/architecture.md](docs/architecture.md)。
