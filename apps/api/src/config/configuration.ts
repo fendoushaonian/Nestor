@@ -220,7 +220,9 @@ const STORAGE_DRIVERS: readonly StorageDriver[] = ['local', 's3', 'oss'];
 const toStorageDriver = (v: string | undefined): StorageDriver => {
   const value = (v ?? 'local').trim();
   if (!STORAGE_DRIVERS.includes(value as StorageDriver)) {
-    throw new Error(`Unsupported STORAGE_DRIVER: "${v}". Must be one of: ${STORAGE_DRIVERS.join(', ')}.`);
+    throw new Error(
+      `Unsupported STORAGE_DRIVER: "${v}". Must be one of: ${STORAGE_DRIVERS.join(', ')}.`,
+    );
   }
   return value as StorageDriver;
 };
@@ -263,7 +265,46 @@ const toStringRecord = (v: string | undefined): Record<string, string> => {
   return {};
 };
 
-export default (): Configuration => ({
+/**
+ * 占位密钥: 这些值仅适用于本地开发, 生产环境必须覆盖, 否则启动报错。
+ */
+export const INSECURE_DEFAULTS = {
+  jwtAccessSecret: 'change-me-access-secret',
+  jwtRefreshSecret: 'change-me-refresh-secret',
+  credentialKey: 'change-me-credential-key',
+} as const;
+
+/**
+ * 生产环境 (NODE_ENV=production) 下校验关键密钥未使用占位默认值。
+ * 任一不安全则抛错, 让应用启动即失败 (fail-fast), 避免带着可伪造的 token 上线。
+ */
+export function assertSecureProductionConfig(config: Configuration): void {
+  if (config.app.env !== 'production') return;
+  const problems: string[] = [];
+  if (!config.jwt.accessSecret || config.jwt.accessSecret === INSECURE_DEFAULTS.jwtAccessSecret) {
+    problems.push('JWT_ACCESS_SECRET');
+  }
+  if (
+    !config.jwt.refreshSecret ||
+    config.jwt.refreshSecret === INSECURE_DEFAULTS.jwtRefreshSecret
+  ) {
+    problems.push('JWT_REFRESH_SECRET');
+  }
+  if (
+    !config.workflow.encryptionKey ||
+    config.workflow.encryptionKey === INSECURE_DEFAULTS.credentialKey
+  ) {
+    problems.push('CREDENTIAL_ENCRYPTION_KEY (或 JWT_ACCESS_SECRET)');
+  }
+  if (problems.length > 0) {
+    throw new Error(
+      `[配置] 生产环境必须设置以下密钥且不能使用默认占位值: ${problems.join(', ')}。` +
+        ' 请在环境变量中配置强随机值后再启动。',
+    );
+  }
+}
+
+const loadConfiguration = (): Configuration => ({
   app: {
     env: process.env.NODE_ENV ?? 'development',
     port: toInt(process.env.APP_PORT, 3000),
@@ -286,9 +327,9 @@ export default (): Configuration => ({
     migrationsRun: toBool(process.env.DB_MIGRATIONS_RUN, true),
   },
   jwt: {
-    accessSecret: process.env.JWT_ACCESS_SECRET ?? 'change-me-access-secret',
+    accessSecret: process.env.JWT_ACCESS_SECRET ?? INSECURE_DEFAULTS.jwtAccessSecret,
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
-    refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'change-me-refresh-secret',
+    refreshSecret: process.env.JWT_REFRESH_SECRET ?? INSECURE_DEFAULTS.jwtRefreshSecret,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
   redis: {
@@ -336,7 +377,7 @@ export default (): Configuration => ({
     encryptionKey:
       process.env.CREDENTIAL_ENCRYPTION_KEY ||
       process.env.JWT_ACCESS_SECRET ||
-      'change-me-credential-key',
+      INSECURE_DEFAULTS.credentialKey,
   },
   throttle: {
     enabled: toBool(process.env.THROTTLE_ENABLED, true),
@@ -377,7 +418,8 @@ export default (): Configuration => ({
       accessKeyId: process.env.STORAGE_OSS_ACCESS_KEY_ID ?? '',
       accessKeySecret: process.env.STORAGE_OSS_ACCESS_KEY_SECRET ?? '',
       endpoint: process.env.STORAGE_OSS_ENDPOINT || undefined,
-      publicBaseUrl: (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
+      publicBaseUrl:
+        (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
     },
   },
   notification: {
@@ -390,3 +432,9 @@ export default (): Configuration => ({
     },
   },
 });
+
+export default (): Configuration => {
+  const config = loadConfiguration();
+  assertSecureProductionConfig(config);
+  return config;
+};

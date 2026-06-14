@@ -92,7 +92,16 @@ export class SeedService implements OnApplicationBootstrap {
     if (existing) {
       return;
     }
-    const password = process.env.ADMIN_PASSWORD ?? 'admin123456';
+    const isProduction = (process.env.NODE_ENV ?? 'development') === 'production';
+    const configuredPassword = process.env.ADMIN_PASSWORD;
+    if (isProduction && !configuredPassword) {
+      this.logger.warn(
+        `生产环境未设置 ADMIN_PASSWORD, 已跳过创建初始管理员 "${username}" 以避免弱默认密码。` +
+          ` 请设置 ADMIN_PASSWORD 后重启, 或手动创建管理员账号。`,
+      );
+      return;
+    }
+    const password = configuredPassword ?? 'admin123456';
     const passwordHash = await bcrypt.hash(password, 10);
     await this.users.save(
       this.users.create({
