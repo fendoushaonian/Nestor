@@ -8,6 +8,7 @@ import { Card } from '../modules/card/entities/card.entity';
 import { Product } from '../modules/card/entities/product.entity';
 import { UserEntitlement } from '../modules/card/entities/user-entitlement.entity';
 import { AuditLog } from '../modules/system/entities/audit-log.entity';
+import { FileObject } from '../modules/upload/entities/file-object.entity';
 import { Config } from '../modules/system/entities/config.entity';
 import { LoginLog } from '../modules/system/entities/login-log.entity';
 import { Credential } from '../modules/workflow/entities/credential.entity';
@@ -28,6 +29,7 @@ export const entities = [
   AuditLog,
   LoginLog,
   Config,
+  FileObject,
   Workflow,
   Execution,
   Credential,

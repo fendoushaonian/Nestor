@@ -17,6 +17,7 @@ import { HealthModule } from './modules/health/health.module';
 import { MongoModule } from './modules/mongo/mongo.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { SystemModule } from './modules/system/system.module';
+import { UploadModule } from './modules/upload/upload.module';
 import { WorkflowModule } from './modules/workflow/workflow.module';
 
 @Module({
@@ -53,6 +54,7 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
     AuthModule,
     CardModule,
     SystemModule,
+    UploadModule,
     WorkflowModule,
   ],
   controllers: [AppController],

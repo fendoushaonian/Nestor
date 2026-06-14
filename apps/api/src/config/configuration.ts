@@ -120,6 +120,44 @@ export interface SecurityConfig {
   };
 }
 
+export type StorageDriver = 'local' | 's3' | 'oss';
+
+/** 文件存储: 本地磁盘 / S3 兼容 / 阿里云 OSS。 */
+export interface StorageConfig {
+  driver: StorageDriver;
+  /** 单文件大小上限 (字节) */
+  maxFileSize: number;
+  /** 允许的 MIME 类型; 空数组表示不限制 */
+  allowedMimeTypes: string[];
+  local: {
+    /** 落盘目录 */
+    dir: string;
+    /** 对外访问前缀 (绝对 URL 或以 / 开头的路径), 末尾不含斜杠 */
+    publicBaseUrl: string;
+  };
+  s3: {
+    /** S3 兼容服务端点 (MinIO 等需要; AWS 留空走默认) */
+    endpoint?: string;
+    region: string;
+    bucket: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+    /** 自定义/CDN 访问域名; 留空则按 endpoint/region 推导 */
+    publicBaseUrl?: string;
+    /** MinIO 等需 path-style 寻址 */
+    forcePathStyle: boolean;
+  };
+  oss: {
+    region: string;
+    bucket: string;
+    accessKeyId: string;
+    accessKeySecret: string;
+    endpoint?: string;
+    /** 自定义/CDN 访问域名; 留空则用 OSS 默认域名 */
+    publicBaseUrl?: string;
+  };
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
@@ -130,6 +168,7 @@ export interface Configuration {
   workflow: WorkflowConfig;
   throttle: ThrottleConfig;
   security: SecurityConfig;
+  storage: StorageConfig;
 }
 
 const toBool = (v: string | undefined, fallback = false): boolean =>
@@ -157,6 +196,16 @@ const DB_TYPES: readonly DatabaseType[] = [
   'mssql',
   'oracle',
 ];
+
+const STORAGE_DRIVERS: readonly StorageDriver[] = ['local', 's3', 'oss'];
+
+const toStorageDriver = (v: string | undefined): StorageDriver => {
+  const value = (v ?? 'local').trim();
+  if (!STORAGE_DRIVERS.includes(value as StorageDriver)) {
+    throw new Error(`Unsupported STORAGE_DRIVER: "${v}". Must be one of: ${STORAGE_DRIVERS.join(', ')}.`);
+  }
+  return value as StorageDriver;
+};
 
 const toDbType = (v: string | undefined): DatabaseType => {
   const value = (v ?? 'sqlite').trim();
@@ -255,6 +304,32 @@ export default (): Configuration => ({
       captchaAfter: toInt(process.env.SECURITY_LOCKOUT_CAPTCHA_AFTER, 3),
       maxFailures: toInt(process.env.SECURITY_LOCKOUT_MAX_FAILURES, 10),
       durationSec: toInt(process.env.SECURITY_LOCKOUT_DURATION_SEC, 900),
+    },
+  },
+  storage: {
+    driver: toStorageDriver(process.env.STORAGE_DRIVER),
+    maxFileSize: toInt(process.env.STORAGE_MAX_FILE_SIZE, 10 * 1024 * 1024),
+    allowedMimeTypes: toList(process.env.STORAGE_ALLOWED_MIME_TYPES),
+    local: {
+      dir: process.env.STORAGE_LOCAL_DIR ?? './data/uploads',
+      publicBaseUrl: (process.env.STORAGE_LOCAL_PUBLIC_BASE_URL ?? '/api/files').replace(/\/$/, ''),
+    },
+    s3: {
+      endpoint: process.env.STORAGE_S3_ENDPOINT || undefined,
+      region: process.env.STORAGE_S3_REGION ?? 'us-east-1',
+      bucket: process.env.STORAGE_S3_BUCKET ?? '',
+      accessKeyId: process.env.STORAGE_S3_ACCESS_KEY_ID ?? '',
+      secretAccessKey: process.env.STORAGE_S3_SECRET_ACCESS_KEY ?? '',
+      publicBaseUrl: (process.env.STORAGE_S3_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
+      forcePathStyle: toBool(process.env.STORAGE_S3_FORCE_PATH_STYLE, false),
+    },
+    oss: {
+      region: process.env.STORAGE_OSS_REGION ?? 'oss-cn-hangzhou',
+      bucket: process.env.STORAGE_OSS_BUCKET ?? '',
+      accessKeyId: process.env.STORAGE_OSS_ACCESS_KEY_ID ?? '',
+      accessKeySecret: process.env.STORAGE_OSS_ACCESS_KEY_SECRET ?? '',
+      endpoint: process.env.STORAGE_OSS_ENDPOINT || undefined,
+      publicBaseUrl: (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
     },
   },
 });
