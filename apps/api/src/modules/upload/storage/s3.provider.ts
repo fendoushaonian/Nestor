@@ -32,7 +32,10 @@ export class S3StorageProvider implements StorageProvider {
     if (this.cfg.publicBaseUrl) return `${this.cfg.publicBaseUrl}/${key}`;
     if (this.cfg.endpoint) {
       const base = this.cfg.endpoint.replace(/\/$/, '');
-      return this.cfg.forcePathStyle ? `${base}/${this.cfg.bucket}/${key}` : `${base}/${key}`;
+      if (this.cfg.forcePathStyle) return `${base}/${this.cfg.bucket}/${key}`;
+      // 虚拟主机风格: 把 bucket 作为子域注入到 endpoint host。
+      const m = base.match(/^(https?:\/\/)(.+)$/);
+      return m ? `${m[1]}${this.cfg.bucket}.${m[2]}/${key}` : `${base}/${this.cfg.bucket}/${key}`;
     }
     return `https://${this.cfg.bucket}.s3.${this.cfg.region}.amazonaws.com/${key}`;
   }

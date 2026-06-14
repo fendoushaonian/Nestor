@@ -68,7 +68,15 @@ export class UploadService {
       size: file.size,
       uploaderId,
     });
-    return this.files.save(record);
+    const saved = await this.files.save(record);
+
+    // 本地驱动: provider 返回的 key 路径无对应路由, 改用按 id 回源的 raw 接口(见 UploadController)。
+    // 远端驱动(s3/oss): 保留对象/CDN 直链。id 仅在落库后可知, 故二次保存。
+    if (this.storage.name === 'local') {
+      saved.url = `${this.cfg.local.publicBaseUrl}/${saved.id}/raw`;
+      return this.files.save(saved);
+    }
+    return saved;
   }
 
   async list(query: PaginationQueryDto): Promise<PaginatedResult<FileObject>> {

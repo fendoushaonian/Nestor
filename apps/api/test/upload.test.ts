@@ -7,6 +7,7 @@ import { BusinessException } from '../src/common/exceptions/business.exception';
 import { StorageConfig } from '../src/config/configuration';
 import { FileObject } from '../src/modules/upload/entities/file-object.entity';
 import { LocalStorageProvider } from '../src/modules/upload/storage/local.provider';
+import { S3StorageProvider } from '../src/modules/upload/storage/s3.provider';
 import { StorageProvider } from '../src/modules/upload/storage/storage-provider';
 import { UploadFile, UploadService } from '../src/modules/upload/upload.service';
 
@@ -39,6 +40,39 @@ describe('LocalStorageProvider', () => {
 
   it('读取不存在的 key 返回 null', async () => {
     expect(await provider.read('nope/none.txt')).toBeNull();
+  });
+});
+
+describe('S3StorageProvider.publicUrl', () => {
+  const base = (cfg: Partial<StorageConfig['s3']>) =>
+    new S3StorageProvider({
+      region: 'us-east-1',
+      bucket: 'my-bucket',
+      accessKeyId: '',
+      secretAccessKey: '',
+      forcePathStyle: false,
+      ...cfg,
+    }) as unknown as { publicUrl(k: string): string };
+
+  it('显式 publicBaseUrl 优先', () => {
+    expect(base({ publicBaseUrl: 'https://cdn.example.com' }).publicUrl('a/b.png')).toBe(
+      'https://cdn.example.com/a/b.png',
+    );
+  });
+  it('AWS 默认: 虚拟主机风格 region 域名', () => {
+    expect(base({}).publicUrl('a/b.png')).toBe(
+      'https://my-bucket.s3.us-east-1.amazonaws.com/a/b.png',
+    );
+  });
+  it('自定义 endpoint + path-style: bucket 在路径', () => {
+    expect(
+      base({ endpoint: 'https://minio.local:9000', forcePathStyle: true }).publicUrl('a.png'),
+    ).toBe('https://minio.local:9000/my-bucket/a.png');
+  });
+  it('自定义 endpoint + virtual-hosted: bucket 注入子域', () => {
+    expect(base({ endpoint: 'https://oss.example.com' }).publicUrl('a.png')).toBe(
+      'https://my-bucket.oss.example.com/a.png',
+    );
   });
 });
 
@@ -115,6 +149,19 @@ describe('UploadService', () => {
     expect(saved.uploaderId).toBe('user-1');
     expect(storage.puts).toHaveLength(1);
     expect(repo.rows).toHaveLength(1);
+  });
+
+  it('本地驱动: url 改写为按 id 回源的 raw 接口', async () => {
+    const repo = fakeRepo();
+    const local: StorageProvider = {
+      name: 'local',
+      put: async (i) => ({ key: i.key, url: `/api/files/${i.key}` }),
+      delete: async () => undefined,
+      read: async () => null,
+    };
+    const svc = new UploadService(local, repo as never, fakeConfig());
+    const saved = await svc.upload(file(), 'user-1');
+    expect(saved.url).toBe('/api/files/generated-id/raw');
   });
 
   it('无文件时抛 FILE_UPLOAD_FAILED', async () => {
