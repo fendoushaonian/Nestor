@@ -139,14 +139,24 @@ export class AuthService {
     return this.tokens.issueTokens(await this.toClaims(userId));
   }
 
-  /** 加载用户的角色与权限编码, 组装进 token 载荷。 */
-  private async toClaims(userId: string) {
+  /**
+   * 精简的当前用户视图:角色 / 权限均为编码字符串(非实体对象),
+   * 不泄漏 User 实体字段。供 GET /auth/profile 与 token 签发复用。
+   */
+  async getProfileView(
+    userId: string,
+  ): Promise<{ id: string; username: string; roles: string[]; permissions: string[] }> {
     const user = await this.getProfile(userId);
     const roles = (user.roles ?? []).map((r) => r.code);
     const permissions = Array.from(
       new Set((user.roles ?? []).flatMap((r) => (r.permissions ?? []).map((p) => p.code))),
     );
     return { id: user.id, username: user.username, roles, permissions };
+  }
+
+  /** 加载用户的角色与权限编码, 组装进 token 载荷。 */
+  private async toClaims(userId: string) {
+    return this.getProfileView(userId);
   }
 
   private async writeLoginLog(

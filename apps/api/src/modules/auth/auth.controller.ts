@@ -59,6 +59,6 @@ export class AuthController {
   @Get('profile')
   @ApiOperation({ summary: '获取当前登录用户 (含角色/权限)' })
   profile(@CurrentUser() user: AuthUser) {
-    return this.auth.getProfile(user.id);
+    return this.auth.getProfileView(user.id);
   }
 }
