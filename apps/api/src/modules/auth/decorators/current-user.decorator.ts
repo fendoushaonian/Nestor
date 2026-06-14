@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { AuthUser } from '../auth.types';
 
 /** 取当前登录用户 (由 JwtStrategy 注入到 request.user)。 */

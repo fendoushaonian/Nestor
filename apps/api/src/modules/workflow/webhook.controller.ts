@@ -1,7 +1,7 @@
 import { All, Controller, Param, Req } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { ErrorCode } from '@nestor/shared';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { BusinessException } from '../../common/exceptions/business.exception';
 import { Public } from '../auth/decorators/public.decorator';
 import { ExecutionService } from './execution.service';

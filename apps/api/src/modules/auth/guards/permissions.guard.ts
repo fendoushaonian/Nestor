@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ErrorCode } from '@nestor/shared';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { BusinessException } from '../../../common/exceptions/business.exception';
 import { AuthUser } from '../auth.types';
 import { PERMISSIONS_KEY } from '../decorators/permissions.decorator';

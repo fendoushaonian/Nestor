@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { ApiResponse, success } from '@nestor/shared';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { SKIP_TRANSFORM } from '../decorators/skip-transform.decorator';
