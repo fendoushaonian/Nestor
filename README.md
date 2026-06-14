@@ -46,7 +46,7 @@ Nestor/
 面向前端 APP 的快速起步:
 
 - **模板引擎** — 复制模板目录,替换 `{{var}}`(文件名 + 内容),`_gitignore` → `.gitignore`
-- **生成器** — 内置蓝图 `component` / `page` / `screen` / `module`,按命令生成代码
+- **生成器** — 内置蓝图 `component` / `page` / `screen` / `module` / `nest-module` / `web-module`,按命令生成代码。`module` 会随项目 `framework` 自适应:前端项目生成前端特性模块,`framework: 'node'` 的后端项目生成**整套 NestJS 模块**(entity + service + REST controller + DTO,见下「后端模块复用」)
 - **插件系统** — 插件声明 `apply(ctx)`,注入依赖 / 文件 / 蓝图(内置 `nav` / `ui` / `auth` / `vitest`)
 - **Nestor Studio** — macOS/iOS 风格的可视化工作台,勾选模板与能力,右侧 iPhone 实时预览并生成对应的 `nestor create … / nestor add …` 命令
 
@@ -98,6 +98,31 @@ node packages/cli/dist/index.js generate component Card
 node packages/cli/dist/index.js add ui
 ```
 
+### 后端模块复用 — `nestor g module`
+
+把脚手架与后端打通的关键能力:一条命令在 NestJS 后端生成一整套**风格一致、开箱可编译**的特性模块(对齐 `apps/api` 现有 auth/card/upload 的写法)。
+
+```bash
+cd apps/api
+node ../../packages/cli/dist/index.js g nest-module order   # 生成 order 模块
+# 或在 framework: 'node' 的项目里直接:nestor g module order
+```
+
+生成内容(位于 `src/modules/<name>/`):
+
+```
+order/
+├─ order.module.ts          # TypeOrmModule.forFeature + 装配
+├─ order.service.ts         # 仓储 CRUD + 分页(paginate)+ BusinessException
+├─ order.controller.ts      # REST(@Permissions 守卫 + Swagger)
+├─ entities/order.entity.ts # 继承 BaseEntity, 表名自动复数(orders)
+└─ dto/
+   ├─ create-order.dto.ts   # class-validator 校验
+   └─ update-order.dto.ts   # PartialType(CreateOrderDto)
+```
+
+生成后按提示完成三步接线:① 在 `app.module.ts` 的 `imports` 加 `OrderModule`;② 在 `src/database/entities.ts` 注册 `Order` 实体;③ 如启用权限守卫,seed `order:read` / `order:write` 权限。
+
 ### 跑可视化界面
 
 ```bash
@@ -123,8 +148,10 @@ pnpm dev:web      # 工作流编辑器(react-flow)
 ## Roadmap
 
 **脚手架方向**
+- ✅ 后端模块生成器 `nestor g module`(生成整套 NestJS 模块,见上)
 - 更多模板:`flutter` / `miniprogram`(小程序) / `node-api`
 - Studio 一键 Generate 真正落盘生成代码
+- 生成器自动接线(`--register`:写入 app.module / entities)、把 auth/upload 抽成可发布的 `forRoot()` 包
 - `npm create nestor` 启动器、官方插件市场、`nestor deploy`、远程模板(git/degit)
 
 **后端方向(docs/architecture.md 的 P5 增强)**

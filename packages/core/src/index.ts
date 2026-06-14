@@ -22,6 +22,7 @@ export {
   type RenderTemplateResult,
 } from './template.js'
 export { Generator, builtinBlueprints, buildNameVariables } from './generator.js'
+export { nestModuleBlueprint } from './blueprints/nest-module.js'
 export {
   PluginLoader,
   definePlugin,

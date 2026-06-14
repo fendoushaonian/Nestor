@@ -2,23 +2,39 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import type {
   Blueprint,
+  Framework,
   GeneratedFile,
   Logger,
   ResolvedNestorConfig,
   TemplateVariables,
 } from './types.js'
+import { nestModuleBlueprint } from './blueprints/nest-module.js'
 import { silentLogger } from './logger.js'
 import { pathExists } from './template.js'
 import { toCamelCase, toKebabCase, toPascalCase } from './utils.js'
 
+/** Naive pluralisation good enough for resource/table names (user -> users, category -> categories). */
+function pluralize(word: string): string {
+  if (/(s|x|z|ch|sh)$/.test(word)) return `${word}es`
+  if (/[^aeiou]y$/.test(word)) return `${word.slice(0, -1)}ies`
+  return `${word}s`
+}
+
 /** Build the standard name variables exposed to every blueprint. */
 export function buildNameVariables(entityName: string): TemplateVariables {
+  const kebab = toKebabCase(entityName)
+  const snake = kebab.replace(/-/g, '_')
   return {
     name: entityName,
     Name: toPascalCase(entityName),
     pascalName: toPascalCase(entityName),
     camelName: toCamelCase(entityName),
-    kebabName: toKebabCase(entityName),
+    kebabName: kebab,
+    snakeName: snake,
+    /** kebab-cased plural, used for REST route paths (e.g. `users`). */
+    pluralKebab: pluralize(kebab),
+    /** snake_cased plural, used for DB table names (e.g. `users`). */
+    tableName: pluralize(snake),
   }
 }
 
@@ -90,8 +106,40 @@ export class Generator {
   }
 }
 
-/** The blueprints that ship with Nestor out of the box. */
-export function builtinBlueprints(): Blueprint[] {
+/**
+ * The blueprints that ship with Nestor out of the box.
+ *
+ * `module` is framework-aware: in a backend project (`framework: 'node'`) it
+ * scaffolds a full NestJS feature module; otherwise it scaffolds a frontend
+ * feature module. The backend variant is also always available explicitly as
+ * `nest-module`, and the frontend variant as `web-module`, so either can be
+ * used regardless of the configured framework.
+ */
+export function builtinBlueprints(framework: Framework = 'web'): Blueprint[] {
+  const webModule: Blueprint = {
+    name: 'web-module',
+    description: 'A frontend feature module (state + service + barrel)',
+    targetDir: 'src/modules',
+    files: (_name, v) => [
+      {
+        path: `${v.kebabName}/${v.camelName}.service.ts`,
+        contents: `export class ${v.pascalName}Service {\n  async list(): Promise<unknown[]> {\n    return []\n  }\n}\n`,
+      },
+      {
+        path: `${v.kebabName}/index.ts`,
+        contents: `export * from './${v.camelName}.service.js'\n`,
+      },
+    ],
+  }
+
+  const nestModule = nestModuleBlueprint('nest-module', 'A NestJS backend feature module (entity + service + REST controller + DTOs)')
+
+  // `module` resolves to the variant matching the project's framework.
+  const moduleAlias: Blueprint =
+    framework === 'node'
+      ? nestModuleBlueprint('module', nestModule.description)
+      : { ...webModule, name: 'module' }
+
   return [
     {
       name: 'component',
@@ -130,20 +178,8 @@ export function builtinBlueprints(): Blueprint[] {
         },
       ],
     },
-    {
-      name: 'module',
-      description: 'A feature module (state + service + barrel)',
-      targetDir: 'src/modules',
-      files: (_name, v) => [
-        {
-          path: `${v.kebabName}/${v.camelName}.service.ts`,
-          contents: `export class ${v.pascalName}Service {\n  async list(): Promise<unknown[]> {\n    return []\n  }\n}\n`,
-        },
-        {
-          path: `${v.kebabName}/index.ts`,
-          contents: `export * from './${v.camelName}.service.js'\n`,
-        },
-      ],
-    },
+    moduleAlias,
+    webModule,
+    nestModule,
   ]
 }

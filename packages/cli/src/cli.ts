@@ -25,7 +25,7 @@ export function buildProgram(logger: Logger = createLogger()): Command {
   program
     .command('generate')
     .alias('g')
-    .argument('[blueprint]', 'blueprint name (component, page, module, ...)')
+    .argument('[blueprint]', 'blueprint name (component, page, screen, module, nest-module, web-module)')
     .argument('[name]', 'entity name')
     .option('--overwrite', 'overwrite existing files', false)
     .description('generate code from a blueprint')
