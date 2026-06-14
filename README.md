@@ -92,6 +92,14 @@ pnpm dev:api             # http://localhost:3000/api
 
 > 首次启动会自动 seed 出一个管理员账号 `admin`(默认密码 `admin123456`,请尽快修改)。
 
+### 用 Docker 起后端(Postgres + API)
+
+```bash
+docker compose up --build   # API → http://localhost:3000/api
+```
+
+生产部署、镜像构建与上线清单见 [docs/deployment.md](docs/deployment.md)。
+
 ### 试用脚手架 CLI(本地构建产物)
 
 ```bash

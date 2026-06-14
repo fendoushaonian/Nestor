@@ -1,0 +1,53 @@
+# 一键起「Postgres + Nestor API」的生产样例。
+#   docker compose up --build
+# 首次启动会自动执行 migration 并 seed 基础 RBAC 数据。
+# 生产请务必修改下面的密钥与 ADMIN_PASSWORD。
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nestor
+      POSTGRES_PASSWORD: nestor
+      POSTGRES_DB: nestor
+    volumes:
+      - nestor-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nestor -d nestor']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      APP_PORT: 3000
+      APP_PREFIX: api
+      # 数据库
+      DB_TYPE: postgres
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USERNAME: nestor
+      DB_PASSWORD: nestor
+      DB_DATABASE: nestor
+      DB_MIGRATIONS_RUN: 'true'
+      # 密钥 (生产必须改成强随机值, 例如 openssl rand -hex 32)
+      JWT_ACCESS_SECRET: change-me-access-secret
+      JWT_REFRESH_SECRET: change-me-refresh-secret
+      CREDENTIAL_ENCRYPTION_KEY: change-me-credential-key
+      # 初始管理员 (生产必须设置强密码)
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: change-me-admin-pass
+    ports:
+      - '3000:3000'
+
+volumes:
+  nestor-db:
