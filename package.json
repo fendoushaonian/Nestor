@@ -1,0 +1,39 @@
+{
+  "name": "nestor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Nestor — 一个面向 APP 快速开发的全栈脚手架框架(CLI/Studio 脚手架 + NestJS 企业级后端)",
+  "type": "module",
+  "packageManager": "pnpm@9.15.1",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:api": "pnpm --filter @nestor/shared build && pnpm --filter @nestor/api start:dev",
+    "dev:web": "pnpm --filter @nestor/web dev",
+    "dev:studio": "pnpm --filter @nestor/studio dev",
+    "dev:cli": "pnpm -r --parallel --filter \"@nestor/core\" --filter \"@nestor/cli\" run dev",
+    "start": "pnpm --filter @nestor/api start:prod",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint \"{apps,packages}/**/*.{ts,tsx}\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "migration:generate": "pnpm --filter @nestor/api migration:generate",
+    "migration:run": "pnpm --filter @nestor/api migration:run",
+    "migration:revert": "pnpm --filter @nestor/api migration:revert",
+    "clean": "pnpm -r exec rm -rf dist node_modules/.cache && rm -rf node_modules/.cache"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.10",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.1.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.1.9"
+  }
+}
