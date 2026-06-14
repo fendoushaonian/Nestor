@@ -42,10 +42,29 @@ export interface JwtConfig {
   refreshExpiresIn: string;
 }
 
+export interface RedisConfig {
+  // 关闭时整个 Redis 能力降级为空操作, 不影响应用启动
+  enabled: boolean;
+  host: string;
+  port: number;
+  password?: string;
+  db: number;
+  // 所有 key 自动加的前缀, 便于多环境/多项目共用一个实例
+  keyPrefix: string;
+}
+
+export interface MongoConfig {
+  // 关闭时不建立 MongoDB 连接
+  enabled: boolean;
+  uri: string;
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
   jwt: JwtConfig;
+  redis: RedisConfig;
+  mongo: MongoConfig;
 }
 
 const toBool = (v: string | undefined, fallback = false): boolean =>
@@ -109,5 +128,17 @@ export default (): Configuration => ({
     accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
     refreshSecret: process.env.JWT_REFRESH_SECRET ?? 'change-me-refresh-secret',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
+  },
+  redis: {
+    enabled: toBool(process.env.REDIS_ENABLED, false),
+    host: process.env.REDIS_HOST ?? 'localhost',
+    port: toInt(process.env.REDIS_PORT, 6379),
+    password: process.env.REDIS_PASSWORD || undefined,
+    db: toInt(process.env.REDIS_DB, 0),
+    keyPrefix: process.env.REDIS_KEY_PREFIX ?? 'nestor:',
+  },
+  mongo: {
+    enabled: toBool(process.env.MONGO_ENABLED, false),
+    uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017/nestor',
   },
 });

@@ -7,6 +7,8 @@ import { AppController } from './app.controller';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
 import { HealthModule } from './modules/health/health.module';
+import { MongoModule } from './modules/mongo/mongo.module';
+import { RedisModule } from './modules/redis/redis.module';
 
 @Module({
   imports: [
@@ -29,6 +31,8 @@ import { HealthModule } from './modules/health/health.module';
       },
     }),
     DatabaseModule,
+    RedisModule,
+    MongoModule.forRoot(),
     HealthModule,
   ],
   controllers: [AppController],

@@ -10,6 +10,8 @@
 
 - **NestJS 10** — 模块化、依赖注入、Guard/Pipe/Interceptor
 - **TypeORM** — 多数据库一键切换（SQLite / better-sqlite3 / MySQL / MariaDB / PostgreSQL / CockroachDB / SQL Server / Oracle）
+- **Redis**（ioredis）— 可选缓存 / 限流 / 会话，`CacheService` 一键复用
+- **MongoDB**（@nestjs/mongoose）— 可选文档数据层，与关系型并存
 - **pnpm monorepo** — `apps/` 应用 + `packages/` 可复用包
 - **class-validator** 参数校验、**Swagger** 自动 API 文档、**pino** 结构化日志
 
@@ -88,6 +90,40 @@ pnpm migration:run
 
 > 仓库内置的初始迁移针对 SQLite（开发默认）。切换到其它数据库时请重新生成对应迁移；
 > 如需先关闭启动自动迁移，设 `DB_MIGRATIONS_RUN=false`。
+
+## Redis（缓存 / 限流 / 会话，可选）
+
+默认关闭。设 `REDIS_ENABLED=true` 即接入；**关闭时所有缓存操作自动降级为空操作**，业务代码无需到处判断 Redis 是否可用。
+
+```bash
+REDIS_ENABLED=true
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_KEY_PREFIX=nestor:    # key 前缀, 多环境/多项目共用实例时隔离
+```
+
+注入全局 `CacheService` 即可使用（get/set/del/exists/incrWithTtl）：
+
+```ts
+constructor(private readonly cache: CacheService) {}
+
+await this.cache.set('user:1', user, 300);      // 缓存 5 分钟
+const u = await this.cache.get<User>('user:1');
+const n = await this.cache.incrWithTtl('login:ip:1.2.3.4', 60); // 限流计数
+```
+
+## MongoDB（文档数据层，可选）
+
+默认关闭。设 `MONGO_ENABLED=true` 才建立连接。它与关系型数据库**并存**，适合存日志、事件、埋点等文档型数据。
+
+```bash
+MONGO_ENABLED=true
+MONGO_URI=mongodb://localhost:27017/nestor
+```
+
+业务模块里用官方 `@nestjs/mongoose` 的 `MongooseModule.forFeature([...])` 注册 schema 即可。
+
+> 健康检查 `/api/health` 会按启用状态自动纳入 `redis` / `mongodb` 探测，未启用则不影响整体状态。
 
 ## 路线图
 
