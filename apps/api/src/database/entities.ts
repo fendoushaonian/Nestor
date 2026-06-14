@@ -9,6 +9,9 @@ import { UserEntitlement } from '../modules/card/entities/user-entitlement.entit
 import { AuditLog } from '../modules/system/entities/audit-log.entity';
 import { Config } from '../modules/system/entities/config.entity';
 import { LoginLog } from '../modules/system/entities/login-log.entity';
+import { Credential } from '../modules/workflow/entities/credential.entity';
+import { Execution } from '../modules/workflow/entities/execution.entity';
+import { Workflow } from '../modules/workflow/entities/workflow.entity';
 
 /** 所有实体集中注册, 供 TypeOrmModule 与 migration 数据源共用。 */
 export const entities = [
@@ -23,4 +26,7 @@ export const entities = [
   AuditLog,
   LoginLog,
   Config,
+  Workflow,
+  Execution,
+  Credential,
 ];

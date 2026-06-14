@@ -59,12 +59,18 @@ export interface MongoConfig {
   uri: string;
 }
 
+export interface WorkflowConfig {
+  /** 凭证加密密钥 (AES-256-GCM, 任意长度自动 sha256 规整) */
+  encryptionKey: string;
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
   jwt: JwtConfig;
   redis: RedisConfig;
   mongo: MongoConfig;
+  workflow: WorkflowConfig;
 }
 
 const toBool = (v: string | undefined, fallback = false): boolean =>
@@ -140,5 +146,11 @@ export default (): Configuration => ({
   mongo: {
     enabled: toBool(process.env.MONGO_ENABLED, false),
     uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017/nestor',
+  },
+  workflow: {
+    encryptionKey:
+      process.env.CREDENTIAL_ENCRYPTION_KEY ||
+      process.env.JWT_ACCESS_SECRET ||
+      'change-me-credential-key',
   },
 });

@@ -32,4 +32,10 @@ export enum ErrorCode {
 
   // 系统 4xxxx
   CONFIG_NOT_FOUND = 40000,
+
+  // 工作流 5xxxx
+  WORKFLOW_NOT_FOUND = 50000,
+  EXECUTION_NOT_FOUND = 50001,
+  CREDENTIAL_NOT_FOUND = 50002,
+  WEBHOOK_NOT_FOUND = 50003,
 }
