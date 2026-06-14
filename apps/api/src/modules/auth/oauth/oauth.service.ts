@@ -170,12 +170,13 @@ export class OAuthService {
 
   /** 校验并一次性消费 state(防 CSRF / 重放)。 */
   private async consumeState(state: string): Promise<boolean> {
-    if (this.cache.available) {
-      const key = `oauth:state:${state}`;
-      const hit = await this.cache.exists(key);
-      if (hit) await this.cache.del(key);
-      return hit;
+    const client = this.cache.raw;
+    if (client) {
+      // 原子删除: DEL 返回被删 key 数, 并发下仅一个请求得到 1, 杜绝 exists+del 的 TOCTOU 竞态。
+      const deleted = await client.del(`oauth:state:${state}`);
+      return deleted > 0;
     }
+    // 内存兜底路径: Node 单线程, await 间不被打断, get+delete 天然安全。
     const exp = this.localStates.get(state);
     this.localStates.delete(state);
     return exp !== undefined && exp > Date.now();

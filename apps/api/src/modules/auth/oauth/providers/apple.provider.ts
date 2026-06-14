@@ -64,9 +64,11 @@ export class AppleProvider implements OAuthProvider {
     }
 
     const claims = decodeJwtPayload<AppleIdToken>(token.id_token);
+    // 仅采信已验证邮箱; 否则置空, 避免基于未验证邮箱被归并到他人账号(账号接管)。
+    const emailVerified = claims.email_verified === true || claims.email_verified === 'true';
     return {
       providerUserId: claims.sub,
-      email: claims.email,
+      email: emailVerified ? claims.email : undefined,
       raw: claims as unknown as Record<string, unknown>,
     };
   }

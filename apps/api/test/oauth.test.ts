@@ -56,6 +56,35 @@ describe('apple provider - client_secret(ES256) 签名', () => {
     expect(apple.isConfigured()).toBe(true);
   });
 
+  const idToken = (payload: Record<string, unknown>): string => {
+    const seg = (o: unknown) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    return `${seg({ alg: 'RS256' })}.${seg(payload)}.sig`;
+  };
+
+  it('exchangeCode 仅在 email_verified 时返回邮箱(防账号接管)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: () =>
+        Promise.resolve(JSON.stringify({ id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: 'false' }) })),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const unverified = await apple.exchangeCode('code');
+      expect(unverified.providerUserId).toBe('apple-1');
+      expect(unverified.email).toBeUndefined();
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        text: () =>
+          Promise.resolve(JSON.stringify({ id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: true }) })),
+      });
+      const verified = await apple.exchangeCode('code');
+      expect(verified.email).toBe('a@b.c');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('签出的 JWT 可被对应公钥验签且 claims 正确', () => {
     // @ts-expect-error 访问私有方法做单元验证
     const jwt: string = apple.buildClientSecret();
