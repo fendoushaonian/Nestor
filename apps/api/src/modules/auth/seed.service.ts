@@ -21,6 +21,8 @@ const PERMISSIONS: Array<{ code: string; name: string; resource: string; action:
   { code: 'workflow:write', name: '管理/运行工作流', resource: 'workflow', action: 'write' },
   { code: 'file:read', name: '查看文件', resource: 'file', action: 'read' },
   { code: 'file:write', name: '管理文件', resource: 'file', action: 'write' },
+  { code: 'notification:read', name: '查看通知渠道', resource: 'notification', action: 'read' },
+  { code: 'notification:send', name: '发送通知', resource: 'notification', action: 'send' },
 ];
 
 /** 普通用户默认拥有的权限 */

@@ -158,6 +158,23 @@ export interface StorageConfig {
   };
 }
 
+export type NotificationDriver = 'console' | 'webhook';
+
+/** 通知发送: 控制台(默认) / 通用 Webhook(POST JSON, 可对接飞书/Slack/自建网关)。 */
+export interface NotificationConfig {
+  driver: NotificationDriver;
+  webhook: {
+    /** 接收通知的地址; driver=webhook 时必填 */
+    url: string;
+    /** 请求方法, 默认 POST */
+    method: string;
+    /** 附加请求头 (如鉴权 token), JSON 字符串配置 */
+    headers: Record<string, string>;
+    /** 请求超时 (毫秒) */
+    timeoutMs: number;
+  };
+}
+
 export interface Configuration {
   app: AppConfig;
   database: DatabaseConfig;
@@ -169,6 +186,7 @@ export interface Configuration {
   throttle: ThrottleConfig;
   security: SecurityConfig;
   storage: StorageConfig;
+  notification: NotificationConfig;
 }
 
 const toBool = (v: string | undefined, fallback = false): boolean =>
@@ -213,6 +231,36 @@ const toDbType = (v: string | undefined): DatabaseType => {
     throw new Error(`Unsupported DB_TYPE: "${v}". Must be one of: ${DB_TYPES.join(', ')}.`);
   }
   return value as DatabaseType;
+};
+
+const NOTIFICATION_DRIVERS: readonly NotificationDriver[] = ['console', 'webhook'];
+
+const toNotificationDriver = (v: string | undefined): NotificationDriver => {
+  const value = (v ?? 'console').trim();
+  if (!NOTIFICATION_DRIVERS.includes(value as NotificationDriver)) {
+    throw new Error(
+      `Unsupported NOTIFICATION_DRIVER: "${v}". Must be one of: ${NOTIFICATION_DRIVERS.join(', ')}.`,
+    );
+  }
+  return value as NotificationDriver;
+};
+
+/** 解析 JSON 对象环境变量 (如自定义请求头), 非法或留空时回退到空对象。 */
+const toStringRecord = (v: string | undefined): Record<string, string> => {
+  if (!v || v.trim() === '') return {};
+  try {
+    const parsed: unknown = JSON.parse(v);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const out: Record<string, string> = {};
+      for (const [key, val] of Object.entries(parsed as Record<string, unknown>)) {
+        out[key] = String(val);
+      }
+      return out;
+    }
+  } catch {
+    // 忽略非法 JSON, 回退到空对象
+  }
+  return {};
 };
 
 export default (): Configuration => ({
@@ -330,6 +378,15 @@ export default (): Configuration => ({
       accessKeySecret: process.env.STORAGE_OSS_ACCESS_KEY_SECRET ?? '',
       endpoint: process.env.STORAGE_OSS_ENDPOINT || undefined,
       publicBaseUrl: (process.env.STORAGE_OSS_PUBLIC_BASE_URL || '').replace(/\/$/, '') || undefined,
+    },
+  },
+  notification: {
+    driver: toNotificationDriver(process.env.NOTIFICATION_DRIVER),
+    webhook: {
+      url: process.env.NOTIFICATION_WEBHOOK_URL ?? '',
+      method: (process.env.NOTIFICATION_WEBHOOK_METHOD ?? 'POST').toUpperCase(),
+      headers: toStringRecord(process.env.NOTIFICATION_WEBHOOK_HEADERS),
+      timeoutMs: toInt(process.env.NOTIFICATION_WEBHOOK_TIMEOUT_MS, 10_000),
     },
   },
 });

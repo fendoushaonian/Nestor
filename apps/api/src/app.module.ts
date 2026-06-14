@@ -15,6 +15,7 @@ import { RolesGuard } from './modules/auth/guards/roles.guard';
 import { CardModule } from './modules/card/card.module';
 import { HealthModule } from './modules/health/health.module';
 import { MongoModule } from './modules/mongo/mongo.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { RedisModule } from './modules/redis/redis.module';
 import { SystemModule } from './modules/system/system.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -56,6 +57,7 @@ import { WorkflowModule } from './modules/workflow/workflow.module';
     SystemModule,
     UploadModule,
     WorkflowModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [
