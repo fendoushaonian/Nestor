@@ -28,8 +28,12 @@ export function buildProgram(logger: Logger = createLogger()): Command {
     .argument('[blueprint]', 'blueprint name (component, page, screen, module, nest-module, web-module)')
     .argument('[name]', 'entity name')
     .option('--overwrite', 'overwrite existing files', false)
+    .option('--json', 'emit a machine-readable JSON result (for tools / AI agents)', false)
+    .option('--register', 'auto-wire a backend module into app.module.ts + entities.ts', false)
     .description('generate code from a blueprint')
-    .action((blueprint, name, opts) => generateCommand(blueprint, name, opts, logger))
+    .action(async (blueprint, name, opts) => {
+      await generateCommand(blueprint, name, opts, logger)
+    })
 
   program
     .command('add')

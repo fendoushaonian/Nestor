@@ -146,7 +146,39 @@ order/
    └─ update-order.dto.ts   # PartialType(CreateOrderDto)
 ```
 
-生成后按提示完成三步接线:① 在 `app.module.ts` 的 `imports` 加 `OrderModule`;② 在 `src/database/entities.ts` 注册 `Order` 实体;③ 如启用权限守卫,seed `order:read` / `order:write` 权限。
+生成后默认按提示完成三步接线:① 在 `app.module.ts` 的 `imports` 加 `OrderModule`;② 在 `src/database/entities.ts` 注册 `Order` 实体;③ 如启用权限守卫,seed `order:read` / `order:write` 权限。
+
+#### 配合 AI agent 使用 — `--register` / `--json`
+
+为了让生成结果能被 **AI agent / 脚本**可靠驱动,`generate` 提供两个开关:
+
+- **`--register`** — 自动把后端模块接线进 `app.module.ts`(import + `imports` 数组)与 `src/database/entities.ts`(import + `entities` 数组),省去人手编辑。**幂等**:已接线则原样跳过;找不到锚点则安全跳过并在结果里如实标注(不会破坏文件)。
+- **`--json`** — 只向 stdout 输出**单行 JSON**(屏蔽其余日志),agent 直接 `JSON.parse` 即可拿到结果并决定下一步;出错则输出 `{ "ok": false, "error": "..." }` 且退出码为 1。
+
+```bash
+cd apps/api
+node ../../packages/cli/dist/index.js g nest-module order --register --json
+```
+
+```jsonc
+{
+  "ok": true,
+  "blueprint": "nest-module",
+  "name": "order",
+  "written": ["src/modules/order/order.module.ts", "…(共 6 个文件)"],
+  "registered": [
+    { "file": "src/app.module.ts", "status": "done" },
+    { "file": "src/database/entities.ts", "status": "done" }
+  ],
+  // 仍需人工/agent 处理的后续步骤(此例只剩权限 seed)
+  "nextSteps": [
+    { "type": "seed-permissions", "permissions": ["order:read", "order:write"],
+      "description": "Seed order:read / order:write permissions …" }
+  ]
+}
+```
+
+> 不加 `--register` 时,`registered` 为空,接线步骤会以结构化 `nextSteps`(`register-module` / `register-entity` / `seed-permissions`)返回,agent 可据此自行决定如何落地。
 
 ### 跑可视化界面
 
@@ -178,7 +210,8 @@ pnpm dev:web      # 工作流编辑器(react-flow)
 - 更多模板:`flutter` / `miniprogram`(小程序) / `node-api`
 - Studio 一键 Generate 真正落盘生成代码
 - 把 `@nestor/sdk` 发布到 npm(模板改为直接依赖,移除随附副本);SDK 增加 React hooks 封装
-- 生成器自动接线(`--register`:写入 app.module / entities)、把 auth/upload 抽成可发布的 `forRoot()` 包
+- ✅ 生成器自动接线 `--register`(写入 app.module / entities)+ `--json` 机器可读输出(配合 AI agent)
+- 把 auth/upload 抽成可发布的 `forRoot()` 包
 - `npm create nestor` 启动器、官方插件市场、`nestor deploy`、远程模板(git/degit)
 
 **后端方向(docs/architecture.md 的 P5 增强)**

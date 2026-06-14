@@ -82,3 +82,87 @@ describe('templates', () => {
     expect(names).toEqual(expect.arrayContaining(['mobile', 'web']))
   })
 })
+
+describe('generate — agent-friendly output', () => {
+  let cwd: string
+  let prev: string
+
+  beforeEach(async () => {
+    cwd = await fs.mkdtemp(path.join(os.tmpdir(), 'nestor-agent-'))
+    prev = process.cwd()
+    process.chdir(cwd)
+    await fs.writeFile(path.join(cwd, 'nestor.config.mjs'), "export default { framework: 'node' }\n", 'utf8')
+  })
+
+  afterEach(async () => {
+    process.chdir(prev)
+    await fs.rm(cwd, { recursive: true, force: true })
+  })
+
+  it('returns a structured result with written files + manual nextSteps (no --register)', async () => {
+    const result = await generateCommand('nest-module', 'invoice', { json: true }, silentLogger)
+    expect(result?.ok).toBe(true)
+    expect(result?.written).toEqual(
+      expect.arrayContaining([path.join('src', 'modules', 'invoice', 'invoice.module.ts')]),
+    )
+    expect(result?.registered).toEqual([])
+    // Without --register, the host-file edits are surfaced as structured next steps.
+    expect(result?.nextSteps.map((s) => s.type)).toEqual([
+      'register-module',
+      'register-entity',
+      'seed-permissions',
+    ])
+  })
+
+  it('--register auto-wires the module into app.module.ts and entities.ts', async () => {
+    await fs.mkdir(path.join(cwd, 'src', 'database'), { recursive: true })
+    await fs.writeFile(
+      path.join(cwd, 'src', 'app.module.ts'),
+      "import { Module } from '@nestjs/common';\nimport { DatabaseModule } from './database/database.module';\n\n@Module({\n  imports: [\n    DatabaseModule,\n  ],\n})\nexport class AppModule {}\n",
+      'utf8',
+    )
+    await fs.writeFile(
+      path.join(cwd, 'src', 'database', 'entities.ts'),
+      "import { User } from '../modules/auth/entities/user.entity';\n\nexport const entities = [\n  User,\n];\n",
+      'utf8',
+    )
+
+    const result = await generateCommand('nest-module', 'order', { register: true }, silentLogger)
+
+    expect(result?.registered).toEqual([
+      { file: 'src/app.module.ts', status: 'done' },
+      { file: 'src/database/entities.ts', status: 'done' },
+    ])
+    expect(result?.nextSteps.map((s) => s.type)).toEqual(['seed-permissions'])
+
+    const appModule = await fs.readFile(path.join(cwd, 'src', 'app.module.ts'), 'utf8')
+    expect(appModule).toContain("import { OrderModule } from './modules/order/order.module';")
+    expect(appModule).toMatch(/imports:\s*\[\s*\n\s*OrderModule,/)
+
+    const entities = await fs.readFile(path.join(cwd, 'src', 'database', 'entities.ts'), 'utf8')
+    expect(entities).toContain("import { Order } from '../modules/order/entities/order.entity';")
+    expect(entities).toMatch(/export const entities = \[\s*\n\s*Order,/)
+  })
+
+  it('--register is idempotent', async () => {
+    await fs.mkdir(path.join(cwd, 'src', 'database'), { recursive: true })
+    await fs.writeFile(
+      path.join(cwd, 'src', 'app.module.ts'),
+      '@Module({\n  imports: [\n  ],\n})\nexport class AppModule {}\n',
+      'utf8',
+    )
+    await fs.writeFile(
+      path.join(cwd, 'src', 'database', 'entities.ts'),
+      'export const entities = [\n];\n',
+      'utf8',
+    )
+
+    await generateCommand('nest-module', 'order', { register: true }, silentLogger)
+    const second = await generateCommand('nest-module', 'order', { register: true, overwrite: true }, silentLogger)
+
+    expect(second?.registered).toEqual([
+      { file: 'src/app.module.ts', status: 'already' },
+      { file: 'src/database/entities.ts', status: 'already' },
+    ])
+  })
+})
