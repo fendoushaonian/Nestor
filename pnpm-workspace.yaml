@@ -1,0 +1,5 @@
+# Only real packages are workspace members. `templates/*` are raw file payloads
+# copied by the CLI (their package.json contains `{{placeholders}}`), so they are
+# intentionally NOT workspace members.
+packages:
+  - 'packages/*'

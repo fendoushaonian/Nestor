@@ -1,0 +1,30 @@
+{
+  "name": "@nestor/cli",
+  "version": "0.1.0",
+  "description": "Command line interface for the Nestor app scaffolding framework",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "nestor": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc -b --pretty"
+  },
+  "dependencies": {
+    "@nestor/core": "workspace:*",
+    "commander": "^12.1.0",
+    "picocolors": "^1.0.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/prompts": "^2.4.9"
+  }
+}
