@@ -39,9 +39,9 @@ import { NestorClient } from './lib/nestor'
 const api = new NestorClient({ baseUrl: import.meta.env.VITE_API_BASE })
 
 await api.auth.login({ identifier: 'admin', password: '••••••' })
-const me = await api.auth.profile()           // bearer attached automatically
+const me = await api.auth.profile() // bearer attached automatically
 const page = await api.files.list({ page: 1 }) // ApiResponse unwrapped to `data`
-await api.files.upload(file, file.name)        // multipart, field name `file`
+await api.files.upload(file, file.name) // multipart, field name `file`
 ```
 
 Tokens are stored in `localStorage` and refreshed transparently when the access

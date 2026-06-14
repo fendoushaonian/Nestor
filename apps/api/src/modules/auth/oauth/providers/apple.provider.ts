@@ -12,8 +12,7 @@ interface AppleIdToken {
   email_verified?: boolean | string;
 }
 
-const b64url = (input: Buffer | string): string =>
-  Buffer.from(input).toString('base64url');
+const b64url = (input: Buffer | string): string => Buffer.from(input).toString('base64url');
 
 /**
  * Sign in with Apple。

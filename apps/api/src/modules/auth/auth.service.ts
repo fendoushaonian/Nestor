@@ -65,7 +65,10 @@ export class AuthService {
     // 1) 失败过多 -> 临时锁定, 直接拒绝(即使密码正确), 防爆破
     if (status.locked) {
       await this.writeLoginLog(ctx, dto.identifier, undefined, false, '失败过多, 已临时锁定');
-      throw new BusinessException(ErrorCode.ACCOUNT_LOCKED, '失败次数过多, 账号已临时锁定, 请稍后再试');
+      throw new BusinessException(
+        ErrorCode.ACCOUNT_LOCKED,
+        '失败次数过多, 账号已临时锁定, 请稍后再试',
+      );
     }
     // 2) 命中验证码门槛 -> 必须通过图形验证码
     if (status.captchaRequired) {

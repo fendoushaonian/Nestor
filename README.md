@@ -112,14 +112,14 @@ node packages/cli/dist/index.js create my-app --template fullstack
 客户端用法(`@nestor/sdk`,模板内为 `src/lib/nestor.ts` 的随附副本):
 
 ```ts
-import { NestorClient } from '@nestor/sdk'
+import { NestorClient } from '@nestor/sdk';
 
-const api = new NestorClient({ baseUrl: import.meta.env.VITE_API_BASE }) // 默认 prefix=api
+const api = new NestorClient({ baseUrl: import.meta.env.VITE_API_BASE }); // 默认 prefix=api
 
-await api.auth.login({ identifier: 'admin', password: '••••••' }) // token 自动入库
-const me = await api.auth.profile()            // 自动附带 Bearer;返回已解包的 data
-const page = await api.files.list({ page: 1 }) // PaginatedResult<FileObject>
-await api.files.upload(file, file.name)        // multipart,字段名 file
+await api.auth.login({ identifier: 'admin', password: '••••••' }); // token 自动入库
+const me = await api.auth.profile(); // 自动附带 Bearer;返回已解包的 data
+const page = await api.files.list({ page: 1 }); // PaginatedResult<FileObject>
+await api.files.upload(file, file.name); // multipart,字段名 file
 // access token 过期 → 透明地用 refreshToken 续期并重试一次;失败则清空会话
 ```
 
@@ -168,13 +168,16 @@ node ../../packages/cli/dist/index.js g nest-module order --register --json
   "written": ["src/modules/order/order.module.ts", "…(共 6 个文件)"],
   "registered": [
     { "file": "src/app.module.ts", "status": "done" },
-    { "file": "src/database/entities.ts", "status": "done" }
+    { "file": "src/database/entities.ts", "status": "done" },
   ],
   // 仍需人工/agent 处理的后续步骤(此例只剩权限 seed)
   "nextSteps": [
-    { "type": "seed-permissions", "permissions": ["order:read", "order:write"],
-      "description": "Seed order:read / order:write permissions …" }
-  ]
+    {
+      "type": "seed-permissions",
+      "permissions": ["order:read", "order:write"],
+      "description": "Seed order:read / order:write permissions …",
+    },
+  ],
 }
 ```
 
@@ -191,20 +194,21 @@ pnpm dev:web      # 工作流编辑器(react-flow)
 
 ## 常用脚本(根目录)
 
-| 命令 | 说明 |
-| --- | --- |
-| `pnpm build` | `pnpm -r build`,按依赖顺序构建所有包 |
-| `pnpm typecheck` | 各包类型检查 |
-| `pnpm lint` / `pnpm format` | ESLint / Prettier |
-| `pnpm test` | 各包 vitest 单测 |
+| 命令                                                  | 说明                                            |
+| ----------------------------------------------------- | ----------------------------------------------- |
+| `pnpm build`                                          | `pnpm -r build`,按依赖顺序构建所有包            |
+| `pnpm typecheck`                                      | 各包类型检查                                    |
+| `pnpm lint` / `pnpm format`                           | ESLint / Prettier                               |
+| `pnpm test`                                           | 各包 vitest 单测                                |
 | `pnpm dev:api` / `dev:web` / `dev:studio` / `dev:cli` | 分别起后端 / 工作流编辑器 / Studio / CLI(watch) |
-| `pnpm migration:generate\|run\|revert` | TypeORM 迁移(透传到 `@nestor/api`) |
+| `pnpm migration:generate\|run\|revert`                | TypeORM 迁移(透传到 `@nestor/api`)              |
 
 ---
 
 ## Roadmap
 
 **脚手架方向**
+
 - ✅ 后端模块生成器 `nestor g module`(生成整套 NestJS 模块,见上)
 - ✅ 全栈模板 `fullstack` + 前端 SDK `@nestor/sdk`(前后端打通,见上)
 - 更多模板:`flutter` / `miniprogram`(小程序) / `node-api`
@@ -215,6 +219,7 @@ pnpm dev:web      # 工作流编辑器(react-flow)
 - `npm create nestor` 启动器、官方插件市场、`nestor deploy`、远程模板(git/degit)
 
 **后端方向(docs/architecture.md 的 P5 增强)**
+
 - 支付(微信 / 支付宝)、文件上传(本地 / OSS / S3)
 - 短信 / 邮件、第三方登录(微信 / Google OAuth)、验证码 + 登录失败锁定
 - 任务队列(BullMQ)、通用后台管理前端

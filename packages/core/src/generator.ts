@@ -132,7 +132,10 @@ export function builtinBlueprints(framework: Framework = 'web'): Blueprint[] {
     ],
   }
 
-  const nestModule = nestModuleBlueprint('nest-module', 'A NestJS backend feature module (entity + service + REST controller + DTOs)')
+  const nestModule = nestModuleBlueprint(
+    'nest-module',
+    'A NestJS backend feature module (entity + service + REST controller + DTOs)',
+  )
 
   // `module` resolves to the variant matching the project's framework.
   const moduleAlias: Blueprint =

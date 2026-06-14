@@ -65,7 +65,11 @@ describe('apple provider - client_secret(ES256) 签名', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       text: () =>
-        Promise.resolve(JSON.stringify({ id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: 'false' }) })),
+        Promise.resolve(
+          JSON.stringify({
+            id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: 'false' }),
+          }),
+        ),
     });
     vi.stubGlobal('fetch', fetchMock);
     try {
@@ -76,7 +80,11 @@ describe('apple provider - client_secret(ES256) 签名', () => {
       fetchMock.mockResolvedValueOnce({
         ok: true,
         text: () =>
-          Promise.resolve(JSON.stringify({ id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: true }) })),
+          Promise.resolve(
+            JSON.stringify({
+              id_token: idToken({ sub: 'apple-1', email: 'a@b.c', email_verified: true }),
+            }),
+          ),
       });
       const verified = await apple.exchangeCode('code');
       expect(verified.email).toBe('a@b.c');
@@ -156,7 +164,9 @@ function buildService(profile: OAuthUserProfile, opts: { identityUserId?: string
   } as never;
   const config = { get: () => ({ successRedirect: undefined }) } as never;
   const identities = {
-    findOne: vi.fn().mockResolvedValue(opts.identityUserId ? { userId: opts.identityUserId } : null),
+    findOne: vi
+      .fn()
+      .mockResolvedValue(opts.identityUserId ? { userId: opts.identityUserId } : null),
   } as never;
 
   const service = new OAuthService(registry as never, cache, auth, dataSource, config, identities);

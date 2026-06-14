@@ -14,9 +14,7 @@ import {
  */
 @Injectable()
 export class NotificationService {
-  constructor(
-    @Inject(NOTIFICATION_CHANNEL) private readonly channel: NotificationChannel,
-  ) {}
+  constructor(@Inject(NOTIFICATION_CHANNEL) private readonly channel: NotificationChannel) {}
 
   /** 当前生效的渠道名 (console / webhook)。 */
   get driver(): string {
