@@ -103,6 +103,11 @@ export class AuthService {
     return user;
   }
 
+  /** 为指定用户签发令牌(第三方登录等复用登录后置流程)。 */
+  async issueTokensForUser(userId: string): Promise<IssuedTokens> {
+    return this.tokens.issueTokens(await this.toClaims(userId));
+  }
+
   /** 加载用户的角色与权限编码, 组装进 token 载荷。 */
   private async toClaims(userId: string) {
     const user = await this.getProfile(userId);

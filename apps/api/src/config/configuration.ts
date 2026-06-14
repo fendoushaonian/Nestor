@@ -59,6 +59,36 @@ export interface MongoConfig {
   uri: string;
 }
 
+/** 标准 OAuth2 授权码 provider 配置(Google / GitHub / 微信)。 */
+export interface OAuthProviderConfig {
+  enabled: boolean;
+  clientId: string;
+  clientSecret: string;
+  /** 回调地址, 必须与各平台后台登记的一致 */
+  redirectUri: string;
+}
+
+/** Apple Sign in 需要用 .p8 私钥(ES256)动态签出 client_secret。 */
+export interface AppleOAuthConfig {
+  enabled: boolean;
+  /** Services ID, 作为 client_id */
+  clientId: string;
+  teamId: string;
+  keyId: string;
+  /** .p8 私钥内容(PEM), 可用 \n 转义换行 */
+  privateKey: string;
+  redirectUri: string;
+}
+
+export interface OAuthConfig {
+  /** 成功后回跳前端地址(可选): 命中时 callback 以 302 带 token 跳转, 否则返回 JSON */
+  successRedirect?: string;
+  google: OAuthProviderConfig;
+  github: OAuthProviderConfig;
+  wechat: OAuthProviderConfig;
+  apple: AppleOAuthConfig;
+}
+
 export interface WorkflowConfig {
   /** 凭证加密密钥 (AES-256-GCM, 任意长度自动 sha256 规整) */
   encryptionKey: string;
@@ -70,6 +100,7 @@ export interface Configuration {
   jwt: JwtConfig;
   redis: RedisConfig;
   mongo: MongoConfig;
+  oauth: OAuthConfig;
   workflow: WorkflowConfig;
 }
 
@@ -146,6 +177,35 @@ export default (): Configuration => ({
   mongo: {
     enabled: toBool(process.env.MONGO_ENABLED, false),
     uri: process.env.MONGO_URI ?? 'mongodb://localhost:27017/nestor',
+  },
+  oauth: {
+    successRedirect: process.env.OAUTH_SUCCESS_REDIRECT || undefined,
+    google: {
+      enabled: toBool(process.env.OAUTH_GOOGLE_ENABLED, false),
+      clientId: process.env.OAUTH_GOOGLE_CLIENT_ID ?? '',
+      clientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET ?? '',
+      redirectUri: process.env.OAUTH_GOOGLE_REDIRECT_URI ?? '',
+    },
+    github: {
+      enabled: toBool(process.env.OAUTH_GITHUB_ENABLED, false),
+      clientId: process.env.OAUTH_GITHUB_CLIENT_ID ?? '',
+      clientSecret: process.env.OAUTH_GITHUB_CLIENT_SECRET ?? '',
+      redirectUri: process.env.OAUTH_GITHUB_REDIRECT_URI ?? '',
+    },
+    wechat: {
+      enabled: toBool(process.env.OAUTH_WECHAT_ENABLED, false),
+      clientId: process.env.OAUTH_WECHAT_APP_ID ?? '',
+      clientSecret: process.env.OAUTH_WECHAT_APP_SECRET ?? '',
+      redirectUri: process.env.OAUTH_WECHAT_REDIRECT_URI ?? '',
+    },
+    apple: {
+      enabled: toBool(process.env.OAUTH_APPLE_ENABLED, false),
+      clientId: process.env.OAUTH_APPLE_CLIENT_ID ?? '',
+      teamId: process.env.OAUTH_APPLE_TEAM_ID ?? '',
+      keyId: process.env.OAUTH_APPLE_KEY_ID ?? '',
+      privateKey: (process.env.OAUTH_APPLE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+      redirectUri: process.env.OAUTH_APPLE_REDIRECT_URI ?? '',
+    },
   },
   workflow: {
     encryptionKey:
