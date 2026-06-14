@@ -236,6 +236,8 @@ importers:
 
   packages/core: {}
 
+  packages/sdk: {}
+
   packages/shared:
     dependencies:
       typeorm:

@@ -1,0 +1,2 @@
+# Nestor backend origin. Start it with `pnpm dev:api` in the Nestor monorepo.
+VITE_API_BASE=http://localhost:3000

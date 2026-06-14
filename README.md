@@ -27,10 +27,12 @@ Nestor/
 │  ├─ core/       @nestor/core    脚手架引擎:模板渲染 / 代码生成器 / 插件加载
 │  ├─ cli/        @nestor/cli     命令行入口(create / add / generate / dev / build)
 │  ├─ studio/     @nestor/studio  可视化搭建台(React + Vite,macOS/iOS 风格 UI)
-│  └─ shared/     @nestor/shared  后端共享库:统一响应 / 分页 / BaseEntity / 错误码
+│  ├─ shared/     @nestor/shared  后端共享库:统一响应 / 分页 / BaseEntity / 错误码
+│  └─ sdk/        @nestor/sdk     前端 SDK:类型安全的后端 API 客户端(统一响应解包 + 自动刷新 token)
 ├─ templates/
-│  ├─ starter-mobile/   内置 Mobile 模板(React Native + Expo + TypeScript)
-│  └─ starter-web/      内置 Web 模板(Vite + TypeScript)
+│  ├─ starter-mobile/     内置 Mobile 模板(React Native + Expo + TypeScript)
+│  ├─ starter-web/        内置 Web 模板(Vite + TypeScript)
+│  └─ starter-fullstack/  全栈模板(Vite 前端 + 内置 @nestor/sdk,直连 NestJS 后端)
 └─ docs/architecture.md            企业级后端的设计方案与路线图
 ```
 
@@ -71,7 +73,7 @@ Nestor/
 # 需要 Node >= 20, pnpm 9
 pnpm install
 
-pnpm build        # 构建全部 6 个包
+pnpm build        # 构建全部包
 pnpm typecheck    # 全量类型检查
 pnpm lint         # ESLint
 pnpm test         # 单元测试 (vitest)
@@ -96,6 +98,29 @@ pnpm dev:api             # http://localhost:3000/api
 node packages/cli/dist/index.js create demo --template web
 node packages/cli/dist/index.js generate component Card
 node packages/cli/dist/index.js add ui
+```
+
+### 全栈模板 + 前端 SDK — 前后端一键打通
+
+`fullstack` 模板生成一个 Vite 前端,内置一个对接 NestJS 后端的**类型安全客户端**(`@nestor/sdk` 的随附副本):自动解包统一响应 `ApiResponse`、附带 Bearer token、并在 access token 过期时**自动用 refresh token 续期**。
+
+```bash
+node packages/cli/dist/index.js create my-app --template fullstack
+# 1) 起后端:pnpm dev:api   2) 配 .env 的 VITE_API_BASE   3) cd my-app && npm i && npm run dev
+```
+
+客户端用法(`@nestor/sdk`,模板内为 `src/lib/nestor.ts` 的随附副本):
+
+```ts
+import { NestorClient } from '@nestor/sdk'
+
+const api = new NestorClient({ baseUrl: import.meta.env.VITE_API_BASE }) // 默认 prefix=api
+
+await api.auth.login({ identifier: 'admin', password: '••••••' }) // token 自动入库
+const me = await api.auth.profile()            // 自动附带 Bearer;返回已解包的 data
+const page = await api.files.list({ page: 1 }) // PaginatedResult<FileObject>
+await api.files.upload(file, file.name)        // multipart,字段名 file
+// access token 过期 → 透明地用 refreshToken 续期并重试一次;失败则清空会话
 ```
 
 ### 后端模块复用 — `nestor g module`
@@ -149,8 +174,10 @@ pnpm dev:web      # 工作流编辑器(react-flow)
 
 **脚手架方向**
 - ✅ 后端模块生成器 `nestor g module`(生成整套 NestJS 模块,见上)
+- ✅ 全栈模板 `fullstack` + 前端 SDK `@nestor/sdk`(前后端打通,见上)
 - 更多模板:`flutter` / `miniprogram`(小程序) / `node-api`
 - Studio 一键 Generate 真正落盘生成代码
+- 把 `@nestor/sdk` 发布到 npm(模板改为直接依赖,移除随附副本);SDK 增加 React hooks 封装
 - 生成器自动接线(`--register`:写入 app.module / entities)、把 auth/upload 抽成可发布的 `forRoot()` 包
 - `npm create nestor` 启动器、官方插件市场、`nestor deploy`、远程模板(git/degit)
 
