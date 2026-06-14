@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { ErrorCode, failure } from '@nestor/core';
 import { Request, Response } from 'express';
+import { BusinessException } from '../exceptions/business.exception';
 
 /**
  * 全局异常兜底。把任何抛出的错误转成统一响应结构，避免泄露堆栈给前端。
@@ -26,7 +27,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     let code: number = ErrorCode.UNKNOWN;
     let message = 'Internal server error';
 
-    if (exception instanceof HttpException) {
+    if (exception instanceof BusinessException) {
+      httpStatus = exception.getStatus();
+      message = this.extractMessage(exception.getResponse(), exception.message);
+      // 业务异常自带错误码, 优先使用
+      code = exception.code;
+    } else if (exception instanceof HttpException) {
       httpStatus = exception.getStatus();
       const res = exception.getResponse();
       message = this.extractMessage(res, exception.message);

@@ -1,11 +1,17 @@
 import { join } from 'path';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { v4 as uuidv4 } from 'uuid';
 import { AppController } from './app.controller';
 import configuration from './config/configuration';
 import { DatabaseModule } from './database/database.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from './modules/auth/guards/permissions.guard';
+import { RolesGuard } from './modules/auth/guards/roles.guard';
+import { CardModule } from './modules/card/card.module';
 import { HealthModule } from './modules/health/health.module';
 import { MongoModule } from './modules/mongo/mongo.module';
 import { RedisModule } from './modules/redis/redis.module';
@@ -34,7 +40,15 @@ import { RedisModule } from './modules/redis/redis.module';
     RedisModule,
     MongoModule.forRoot(),
     HealthModule,
+    AuthModule,
+    CardModule,
   ],
   controllers: [AppController],
+  providers: [
+    // 全局守卫顺序: 先登录鉴权, 再角色, 再权限
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+    { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+  ],
 })
 export class AppModule {}

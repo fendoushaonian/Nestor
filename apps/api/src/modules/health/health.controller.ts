@@ -10,6 +10,7 @@ import {
 } from '@nestjs/terminus';
 import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
 import { Configuration } from '../../config/configuration';
+import { Public } from '../auth/decorators/public.decorator';
 import { RedisHealthIndicator } from '../redis/redis.health';
 
 @ApiTags('health')
@@ -23,6 +24,7 @@ export class HealthController {
     private readonly config: ConfigService<Configuration, true>,
   ) {}
 
+  @Public()
   @Get()
   @HealthCheck()
   @SkipTransform()
