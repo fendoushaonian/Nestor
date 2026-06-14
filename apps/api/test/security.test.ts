@@ -68,6 +68,21 @@ describe('LoginAttemptService (内存兜底)', () => {
     expect(s).toMatchObject({ failures: 0, locked: false, captchaRequired: false });
   });
 
+  it('内存模式为固定窗口: 失败不滑动续期(与 Redis incrWithTtl 一致)', async () => {
+    vi.useFakeTimers();
+    try {
+      const svc2 = new LoginAttemptService(memCache, config); // durationSec=900
+      await svc2.recordFailure('carol'); // t=0, 设定窗口到 t=900s
+      vi.advanceTimersByTime(899_000); // t=899s
+      await svc2.recordFailure('carol'); // 固定窗口: 不应把过期推到 t=1799s
+      vi.advanceTimersByTime(2_000); // t=901s, 越过原始窗口
+      const s = await svc2.getStatus('carol');
+      expect(s.failures).toBe(0); // 若是滑动窗口这里会 >0
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('alwaysOnLogin=true 时首次登录即要求验证码', async () => {
     const always = {
       get: () => ({

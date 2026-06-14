@@ -54,9 +54,13 @@ export class LoginAttemptService {
       return n < 0 ? 0 : n;
     }
     const now = Date.now();
-    const entry = this.local.get(key);
-    const count = entry && entry.exp > now ? entry.count + 1 : 1;
-    this.local.set(key, { count, exp: now + ttl * 1000 });
+    const prev = this.local.get(key);
+    const alive = prev && prev.exp > now ? prev : undefined;
+    // 固定窗口: 仅首次失败时设定过期, 后续失败沿用同一窗口, 与 Redis 的 incrWithTtl(仅 n===1 设 TTL) 行为一致;
+    // 避免内存路径变成"滑动窗口"导致锁定语义与 Redis 不同。
+    const count = alive ? alive.count + 1 : 1;
+    const exp = alive ? alive.exp : now + ttl * 1000;
+    this.local.set(key, { count, exp });
     return count;
   }
 
